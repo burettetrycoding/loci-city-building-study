@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AccountModal } from './components/AccountModal';
 import { EnvironmentsPanel } from './components/EnvironmentsPanel';
-import { GitHubGuideView } from './components/GitHubGuideView';
 import { IsometricWorld } from './components/IsometricWorld';
 import { SubjectsPanel } from './components/SubjectsPanel';
 import { TimerControls } from './components/TimerControls';
@@ -43,7 +42,7 @@ import {
   upsertAccount,
 } from './utils/storage';
 
-type ActiveTab = 'stage' | 'subjects' | 'environments' | 'github';
+type ActiveTab = 'stage' | 'subjects' | 'environments';
 
 export default function App() {
   const [account, setAccount] = useState<UserAccount>(() => ensureInitialAccount());
@@ -433,7 +432,6 @@ export default function App() {
                 { id: 'stage', label: 'City Stage' },
                 { id: 'subjects', label: 'Subjects' },
                 { id: 'environments', label: 'Environments' },
-                { id: 'github', label: 'GitHub Guide' },
               ] as const
             ).map((tab) => {
               const active = activeTab === tab.id;
@@ -727,8 +725,6 @@ export default function App() {
             onSelectEnvironment={handleSelectEnvironment}
           />
         )}
-
-        {activeTab === 'github' && <GitHubGuideView />}
       </main>
 
       <AccountModal

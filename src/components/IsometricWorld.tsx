@@ -23,6 +23,7 @@ const TILE_W = 68;
 const TILE_H = 34;
 const ORIGIN_X = 430;
 const ORIGIN_Y = 186;
+const ISO_ANGLE = 26.565; // atan(0.5) for 2:1 isometric projection
 
 function toIso(col: number, row: number): { x: number; y: number } {
   return {
@@ -56,7 +57,7 @@ const IsoPrism: React.FC<IsoPrismProps> = ({
   topColor,
   leftColor,
   rightColor,
-  stroke = 'rgba(15,23,42,0.12)',
+  stroke = 'rgba(15,23,42,0.16)',
 }) => {
   const topY = cy - height;
   const leftFace = `${cx - rx},${topY} ${cx},${topY + ry} ${cx},${cy + ry} ${cx - rx},${cy}`;
@@ -65,9 +66,9 @@ const IsoPrism: React.FC<IsoPrismProps> = ({
 
   return (
     <g>
-      <polygon points={leftFace} fill={leftColor} stroke={stroke} strokeWidth="0.75" strokeLinejoin="round" />
-      <polygon points={rightFace} fill={rightColor} stroke={stroke} strokeWidth="0.75" strokeLinejoin="round" />
-      <polygon points={topFace} fill={topColor} stroke={stroke} strokeWidth="0.75" strokeLinejoin="round" />
+      <polygon points={leftFace} fill={leftColor} stroke={stroke} strokeWidth="0.7" strokeLinejoin="round" />
+      <polygon points={rightFace} fill={rightColor} stroke={stroke} strokeWidth="0.7" strokeLinejoin="round" />
+      <polygon points={topFace} fill={topColor} stroke={stroke} strokeWidth="0.7" strokeLinejoin="round" />
     </g>
   );
 };
@@ -98,9 +99,9 @@ const IsoPyramidRoof: React.FC<IsoPyramidRoofProps> = ({
   const backRight = `${cx},${cy - ry} ${cx + rx},${cy} ${cx},${peakY}`;
 
   return (
-    <g stroke="rgba(15,23,42,0.12)" strokeWidth="0.7" strokeLinejoin="round">
-      <polygon points={backLeft} fill={leftColor} opacity="0.9" />
-      <polygon points={backRight} fill={rightColor} opacity="0.9" />
+    <g stroke="rgba(15,23,42,0.16)" strokeWidth="0.7" strokeLinejoin="round">
+      <polygon points={backLeft} fill={leftColor} opacity="0.92" />
+      <polygon points={backRight} fill={rightColor} opacity="0.92" />
       <polygon points={frontLeft} fill={leftColor} />
       <polygon points={frontRight} fill={rightColor} />
     </g>
@@ -128,7 +129,6 @@ const IsoGableRoof: React.FC<IsoGableRoofProps> = ({
   rightSlopeColor,
   gableColor,
 }) => {
-  // Ridge runs from back-left to front-right
   const ridgeBackX = cx - rx * 0.5;
   const ridgeBackY = cy - ry * 0.5 - peakHeight;
   const ridgeFrontX = cx + rx * 0.5;
@@ -139,13 +139,27 @@ const IsoGableRoof: React.FC<IsoGableRoofProps> = ({
   const frontGable = `${cx},${cy + ry} ${cx + rx},${cy} ${ridgeFrontX},${ridgeFrontY}`;
 
   return (
-    <g stroke="rgba(15,23,42,0.14)" strokeWidth="0.7" strokeLinejoin="round">
+    <g stroke="rgba(15,23,42,0.16)" strokeWidth="0.7" strokeLinejoin="round">
       <polygon points={rightSlope} fill={rightSlopeColor} />
       <polygon points={leftSlope} fill={leftSlopeColor} />
       <polygon points={frontGable} fill={gableColor} />
     </g>
   );
 };
+
+/** Helper to place flat architectural elements aligned on the left-facing wall */
+const LeftWallPlane: React.FC<{ x: number; y: number; children: React.ReactNode }> = ({
+  x,
+  y,
+  children,
+}) => <g transform={`translate(${x}, ${y}) skewY(${ISO_ANGLE})`}>{children}</g>;
+
+/** Helper to place flat architectural elements aligned on the right-facing wall */
+const RightWallPlane: React.FC<{ x: number; y: number; children: React.ReactNode }> = ({
+  x,
+  y,
+  children,
+}) => <g transform={`translate(${x}, ${y}) skewY(-${ISO_ANGLE})`}>{children}</g>;
 
 function renderStructureArt(
   kind: StructureKind,
@@ -154,173 +168,119 @@ function renderStructureArt(
   theme: EnvironmentTheme,
   isRunning: boolean
 ) {
-  const winGlow = theme.isNight ? '#FDE047' : theme.windowColor;
-  const winStroke = theme.isNight ? 'rgba(251,191,36,0.55)' : 'rgba(15,23,42,0.18)';
+  const night = theme.isNight;
+  const warmGlass = night ? '#FDE047' : '#FEF3C7';
+  const coolGlass = night ? '#FBBF24' : '#BAE6FD';
+  const frameStroke = '#334155';
 
   switch (kind) {
-    case 'plaza_fountain':
-      return (
-        <g>
-          <ellipse cx={cx} cy={cy + 3} rx={36} ry={18} fill={theme.pathColor} stroke="rgba(15,23,42,0.1)" />
-          <ellipse cx={cx} cy={cy + 2} rx={24} ry={12} fill={theme.waterColor} stroke="#94A3B8" strokeWidth="2" />
-          <ellipse cx={cx} cy={cy - 10} rx={10} ry={5} fill="#E2E8F0" stroke="rgba(15,23,42,0.15)" />
-          <rect x={cx - 3} y={cy - 22} width={6} height={22} rx={2} fill="#CBD5E1" />
-          <circle cx={cx} cy={cy - 24} r={3.5} fill={theme.waterColor} />
-          <path
-            d={`M ${cx} ${cy - 24} Q ${cx - 10} ${cy - 18} ${cx - 12} ${cy - 1} M ${cx} ${cy - 24} Q ${cx + 10} ${cy - 18} ${cx + 12} ${cy - 1}`}
-            fill="none"
-            stroke="#BAE6FD"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-            opacity="0.85"
-          />
-        </g>
-      );
-
-    case 'well':
-      return (
-        <g>
-          <ellipse cx={cx} cy={cy + 4} rx={24} ry={12} fill={theme.pathColor} />
-          <IsoPrism
-            cx={cx}
-            cy={cy + 2}
-            rx={14}
-            ry={7}
-            height={11}
-            topColor={theme.waterColor}
-            leftColor="#94A3B8"
-            rightColor="#64748B"
-          />
-          <line x1={cx - 10} y1={cy - 8} x2={cx - 10} y2={cy - 28} stroke="#78350F" strokeWidth="2.4" />
-          <line x1={cx + 10} y1={cy - 8} x2={cx + 10} y2={cy - 28} stroke="#78350F" strokeWidth="2.4" />
-          <IsoGableRoof
-            cx={cx}
-            cy={cy - 26}
-            rx={18}
-            ry={9}
-            peakHeight={10}
-            leftSlopeColor={theme.roofPrimary}
-            rightSlopeColor={theme.roofSecondary}
-            gableColor="#78350F"
-          />
-        </g>
-      );
-
-    case 'bookshop':
-      return (
-        <g>
-          <IsoPrism
-            cx={cx}
-            cy={cy + 4}
-            rx={32}
-            ry={16}
-            height={28}
-            topColor={theme.roofPrimary}
-            leftColor={theme.wallLight}
-            rightColor={theme.wallDark}
-          />
-          <IsoGableRoof
-            cx={cx}
-            cy={cy - 24}
-            rx={34}
-            ry={17}
-            peakHeight={15}
-            leftSlopeColor={theme.roofPrimary}
-            rightSlopeColor={theme.roofSecondary}
-            gableColor={theme.wallDark}
-          />
-          {/* Awning & bookshop windows */}
-          <polygon
-            points={`${cx - 26},${cy - 6} ${cx - 4},${cy + 5} ${cx - 4},${cy + 10} ${cx - 26},${cy - 1}`}
-            fill={theme.accentColor}
-          />
-          <polygon
-            points={`${cx - 22},${cy - 18} ${cx - 12},${cy - 13} ${cx - 12},${cy - 7} ${cx - 22},${cy - 12}`}
-            fill={winGlow}
-            stroke={winStroke}
-          />
-          <polygon
-            points={`${cx + 8},${cy - 13} ${cx + 20},${cy - 19} ${cx + 20},${cy - 11} ${cx + 8},${cy - 5}`}
-            fill={winGlow}
-            stroke={winStroke}
-          />
-        </g>
-      );
-
     case 'cafe':
       return (
         <g>
-          <IsoPrism
-            cx={cx}
-            cy={cy + 5}
-            rx={30}
-            ry={15}
-            height={22}
-            topColor={theme.wallLight}
-            leftColor={theme.wallLight}
-            rightColor={theme.wallDark}
-          />
-          <IsoPrism
-            cx={cx}
-            cy={cy - 17}
-            rx={31}
-            ry={15.5}
-            height={4}
-            topColor={theme.roofPrimary}
-            leftColor={theme.roofSecondary}
-            rightColor={theme.roofSecondary}
-          />
-          {/* Striped awning */}
+          {/* Sidewalk terrace */}
           <polygon
-            points={`${cx - 24},${cy - 4} ${cx - 2},${cy + 7} ${cx - 2},${cy + 12} ${cx - 24},${cy + 1}`}
-            fill={theme.roofPrimary}
+            points={isoDiamondPoints(cx, cy + 5, 48, 24)}
+            fill="#E7E5E4"
+            stroke="rgba(15,23,42,0.12)"
+            strokeWidth="0.7"
           />
-          {/* Outdoor umbrella & table */}
-          <circle cx={cx + 22} cy={cy + 8} r={6} fill={theme.accentColor} />
-          <line x1={cx + 22} y1={cy + 8} x2={cx + 22} y2={cy + 17} stroke="#475569" strokeWidth="1.5" />
-          <polygon
-            points={`${cx + 10},${cy - 8} ${cx + 22},${cy - 14} ${cx + 22},${cy - 7} ${cx + 10},${cy - 1}`}
-            fill={winGlow}
-            stroke={winStroke}
-          />
-        </g>
-      );
-
-    case 'townhouse':
-      return (
-        <g>
+          {/* Main cafe building (warm cream stucco + espresso brick base) */}
           <IsoPrism
-            cx={cx}
-            cy={cy + 4}
+            cx={cx - 4}
+            cy={cy + 2}
             rx={28}
             ry={14}
-            height={40}
-            topColor={theme.wallDark}
-            leftColor={theme.wallLight}
-            rightColor={theme.wallDark}
+            height={28}
+            topColor="#F5F5F4"
+            leftColor="#FFFBEB"
+            rightColor="#E7E5E4"
           />
-          <IsoGableRoof
-            cx={cx}
-            cy={cy - 36}
+          {/* Espresso wainscoting along lower wall */}
+          <IsoPrism
+            cx={cx - 4}
+            cy={cy + 2}
+            rx={28.3}
+            ry={14.15}
+            height={6}
+            topColor="#78350F"
+            leftColor="#78350F"
+            rightColor="#57260A"
+          />
+          {/* Mansard green-slate roof */}
+          <IsoPrism
+            cx={cx - 4}
+            cy={cy - 26}
             rx={30}
             ry={15}
-            peakHeight={14}
-            leftSlopeColor={theme.roofPrimary}
-            rightSlopeColor={theme.roofSecondary}
-            gableColor={theme.wallLight}
+            height={6}
+            topColor="#14532D"
+            leftColor="#166534"
+            rightColor="#14532D"
           />
-          {/* Two rows of windows */}
-          {[-26, -13].map((dy, i) => (
+
+          {/* Left wall: Shopfront window, door, striped awning & "CAFÉ" signboard */}
+          <LeftWallPlane x={cx - 32} y={cy - 26}>
+            {/* Roof fascia signboard */}
+            <rect x="4" y="-5" width="20" height="6.5" rx="1" fill="#1E293B" stroke="#FDE68A" strokeWidth="0.5" />
+            <text
+              x="14"
+              y="0"
+              textAnchor="middle"
+              fill="#FEF3C7"
+              fontSize="4.6"
+              fontWeight="700"
+              fontFamily="Bricolage Grotesque, sans-serif"
+              letterSpacing="0.5"
+            >
+              CAFÉ
+            </text>
+            {/* Large warm glass window + doorway */}
+            <rect x="3" y="8" width="13" height="12" rx="0.8" fill={warmGlass} stroke="#451A03" strokeWidth="0.7" />
+            <line x1="9.5" y1="8" x2="9.5" y2="20" stroke="#78350F" strokeWidth="0.6" />
+            {/* Tiny hanging menu inside window */}
+            <rect x="5" y="10" width="3" height="4" fill="#1E293B" opacity="0.65" />
+            {/* Wooden café door */}
+            <rect x="19" y="9" width="7" height="17" rx="0.6" fill="#78350F" stroke="#451A03" strokeWidth="0.6" />
+            <rect x="20.5" y="10.5" width="4" height="7" fill={warmGlass} />
+            <circle cx="24.8" cy="18.5" r="0.6" fill="#FBBF24" />
+            {/* Striped awning */}
+            <polygon points="1,6 27,6 29,11 3,11" fill="#15803D" stroke="#14532D" strokeWidth="0.5" />
+            {[4, 10, 16, 22].map((sx) => (
+              <polygon key={sx} points={`${sx},6 ${sx + 3},6 ${sx + 4},11 ${sx + 1},11`} fill="#FEF3C7" />
+            ))}
+          </LeftWallPlane>
+
+          {/* Right wall: Upper window & chalkboard menu */}
+          <RightWallPlane x={cx - 4} y={cy - 12}>
+            <rect x="6" y="-12" width="14" height="9" rx="0.8" fill={warmGlass} stroke="#451A03" strokeWidth="0.7" />
+            <line x1="13" y1="-12" x2="13" y2="-3" stroke="#78350F" strokeWidth="0.6" />
+            {/* Side chalkboard */}
+            <rect x="9" y="1" width="7" height="9" rx="0.5" fill="#1E293B" stroke="#B45309" strokeWidth="0.7" />
+            <line x1="10.5" y1="3.5" x2="14.5" y2="3.5" stroke="#FDE68A" strokeWidth="0.6" />
+            <line x1="10.5" y1="5.5" x2="13.5" y2="5.5" stroke="#E2E8F0" strokeWidth="0.5" />
+          </RightWallPlane>
+
+          {/* Outdoor Patio Bistro Tables & Chairs (front-right terrace) */}
+          {[
+            { tx: cx + 22, ty: cy + 8, umbrella: '#DC2626' },
+            { tx: cx + 6, ty: cy + 16, umbrella: '#0F766E' },
+          ].map((bistro, i) => (
             <g key={i}>
-              <polygon
-                points={`${cx - 20},${cy + dy} ${cx - 12},${cy + dy + 4} ${cx - 12},${cy + dy + 10} ${cx - 20},${cy + dy + 6}`}
-                fill={winGlow}
-                stroke={winStroke}
-              />
-              <polygon
-                points={`${cx + 8},${cy + dy + 4} ${cx + 18},${cy + dy - 1} ${cx + 18},${cy + dy + 5} ${cx + 8},${cy + dy + 10}`}
-                fill={winGlow}
-                stroke={winStroke}
+              {/* Chairs */}
+              <circle cx={bistro.tx - 6} cy={bistro.ty + 1} r={2.2} fill="#78350F" />
+              <circle cx={bistro.tx + 6} cy={bistro.ty - 1} r={2.2} fill="#78350F" />
+              {/* Bistro table */}
+              <line x1={bistro.tx} y1={bistro.ty + 2} x2={bistro.tx} y2={bistro.ty - 3} stroke="#475569" strokeWidth="1.2" />
+              <ellipse cx={bistro.tx} cy={bistro.ty - 3} rx={4.5} ry={2.4} fill="#FFFFFF" stroke="#94A3B8" strokeWidth="0.6" />
+              {/* Tiny coffee cup */}
+              <rect x={bistro.tx - 1} y={bistro.ty - 4.8} width={2} height={1.8} fill="#78350F" />
+              {/* Parasol */}
+              <line x1={bistro.tx} y1={bistro.ty - 3} x2={bistro.tx} y2={bistro.ty - 14} stroke="#78350F" strokeWidth="1" />
+              <path
+                d={`M ${bistro.tx - 8} ${bistro.ty - 12} Q ${bistro.tx} ${bistro.ty - 20} ${bistro.tx + 8} ${bistro.ty - 12} Z`}
+                fill={bistro.umbrella}
+                stroke="rgba(15,23,42,0.2)"
+                strokeWidth="0.5"
               />
             </g>
           ))}
@@ -330,205 +290,474 @@ function renderStructureArt(
     case 'library':
       return (
         <g>
-          {/* Grand stone steps */}
+          {/* Grand limestone plinth & stairs */}
           <IsoPrism
             cx={cx}
             cy={cy + 6}
-            rx={42}
-            ry={21}
+            rx={44}
+            ry={22}
             height={5}
-            topColor={theme.pathColor}
-            leftColor="#CBD5E1"
-            rightColor="#94A3B8"
+            topColor="#E7E5E4"
+            leftColor="#D6D3D1"
+            rightColor="#A8A29E"
           />
-          {/* Main hall */}
+          {/* Main stone hall */}
           <IsoPrism
             cx={cx}
             cy={cy + 1}
             rx={36}
             ry={18}
             height={36}
-            topColor={theme.roofSecondary}
-            leftColor={theme.wallLight}
-            rightColor={theme.wallDark}
+            topColor="#A8A29E"
+            leftColor="#F5F5F4"
+            rightColor="#D6D3D1"
           />
+          {/* Copper/slate pitched roof */}
           <IsoGableRoof
             cx={cx}
             cy={cy - 35}
             rx={38}
             ry={19}
-            peakHeight={18}
-            leftSlopeColor={theme.roofPrimary}
-            rightSlopeColor={theme.roofSecondary}
-            gableColor={theme.wallLight}
+            peakHeight={16}
+            leftSlopeColor="#334155"
+            rightSlopeColor="#1E293B"
+            gableColor="#E7E5E4"
           />
-          {/* Tall arched windows */}
-          {[-26, -15].map((dx, i) => (
-            <polygon
-              key={i}
-              points={`${cx + dx},${cy - 22} ${cx + dx + 7},${cy - 18.5} ${cx + dx + 7},${cy - 4} ${cx + dx},${cy - 7.5}`}
-              fill={winGlow}
-              stroke={winStroke}
-            />
-          ))}
-          <polygon
-            points={`${cx + 10},${cy - 18} ${cx + 24},${cy - 25} ${cx + 24},${cy - 9} ${cx + 10},${cy - 2}`}
-            fill={winGlow}
-            stroke={winStroke}
+          {/* Rooftop lantern cupola */}
+          <IsoPrism
+            cx={cx}
+            cy={cy - 48}
+            rx={7}
+            ry={3.5}
+            height={8}
+            topColor="#0F766E"
+            leftColor="#F5F5F4"
+            rightColor="#D6D3D1"
           />
+
+          {/* Left Facade: Classical Columns, Grand Doors & "LIBRARY" Frieze */}
+          <LeftWallPlane x={cx - 36} y={cy - 35}>
+            {/* Frieze signboard */}
+            <rect x="2" y="1" width="32" height="7" fill="#E7E5E4" stroke="#78716C" strokeWidth="0.6" />
+            <text
+              x="18"
+              y="6.2"
+              textAnchor="middle"
+              fill="#1E293B"
+              fontSize="4.4"
+              fontWeight="700"
+              letterSpacing="0.7"
+              fontFamily="Georgia, serif"
+            >
+              LIBRARY
+            </text>
+            {/* Tall arched windows flanking central portico */}
+            {[4, 27].map((wx) => (
+              <g key={wx}>
+                <path
+                  d={`M ${wx} 15 A 2.5 3 0 0 1 ${wx + 5} 15 L ${wx + 5} 30 L ${wx} 30 Z`}
+                  fill={coolGlass}
+                  stroke="#57534E"
+                  strokeWidth="0.6"
+                />
+                <line x1={wx + 2.5} y1="12.5" x2={wx + 2.5} y2="30" stroke="#78716C" strokeWidth="0.45" />
+                <line x1={wx} y1="22" x2={wx + 5} y2="22" stroke="#78716C" strokeWidth="0.45" />
+              </g>
+            ))}
+            {/* Central Mahogany Double Entrance + Columns */}
+            <rect x="13" y="18" width="10" height="17" fill="#78350F" stroke="#451A03" strokeWidth="0.6" />
+            <line x1="18" y1="18" x2="18" y2="35" stroke="#451A03" strokeWidth="0.6" />
+            {[11, 24].map((colX) => (
+              <rect key={colX} x={colX} y="9" width="2.2" height="26" fill="#FFFFFF" stroke="#A8A29E" strokeWidth="0.4" />
+            ))}
+          </LeftWallPlane>
+
+          {/* Right Facade: Reading hall tall mullioned windows */}
+          <RightWallPlane x={cx} y={cy - 17}>
+            {[6, 16, 26].map((wx) => (
+              <g key={wx}>
+                <path
+                  d={`M ${wx} -8 A 2.5 3 0 0 1 ${wx + 5} -8 L ${wx + 5} 11 L ${wx} 11 Z`}
+                  fill={warmGlass}
+                  stroke="#57534E"
+                  strokeWidth="0.6"
+                />
+                <line x1={wx + 2.5} y1="-10.5" x2={wx + 2.5} y2="11" stroke="#78716C" strokeWidth="0.45" />
+              </g>
+            ))}
+          </RightWallPlane>
         </g>
       );
 
-    case 'clocktower':
+    case 'bookshop':
       return (
         <g>
+          <polygon points={isoDiamondPoints(cx, cy + 5, 42, 21)} fill="#E7E5E4" />
+          {/* Forest green ground floor + warm brick upper story */}
           <IsoPrism
             cx={cx}
-            cy={cy + 5}
-            rx={22}
-            ry={11}
-            height={66}
-            topColor={theme.roofSecondary}
-            leftColor={theme.wallLight}
-            rightColor={theme.wallDark}
+            cy={cy + 3}
+            rx={30}
+            ry={15}
+            height={16}
+            topColor="#14532D"
+            leftColor="#166534"
+            rightColor="#14532D"
           />
-          <IsoPyramidRoof
+          <IsoPrism
             cx={cx}
-            cy={cy - 61}
-            rx={24}
-            ry={12}
-            peakHeight={26}
-            leftColor={theme.roofPrimary}
-            rightColor={theme.roofSecondary}
+            cy={cy - 13}
+            rx={30}
+            ry={15}
+            height={17}
+            topColor="#B45309"
+            leftColor="#C25E48"
+            rightColor="#9E4633"
           />
-          {/* Clock dial */}
-          <circle cx={cx - 10} cy={cy - 46} r={6} fill="#FFFFFF" stroke="#334155" strokeWidth="1.2" />
-          <line x1={cx - 10} y1={cy - 46} x2={cx - 10} y2={cy - 50} stroke="#0F172A" strokeWidth="1.2" />
-          <line x1={cx - 10} y1={cy - 46} x2={cx - 7} y2={cy - 45} stroke="#0F172A" strokeWidth="1.2" />
-          <circle cx={cx + 10} cy={cy - 46} r={5.5} fill="#FEF3C7" stroke="#334155" strokeWidth="1.2" />
+          <IsoGableRoof
+            cx={cx}
+            cy={cy - 30}
+            rx={32}
+            ry={16}
+            peakHeight={14}
+            leftSlopeColor="#334155"
+            rightSlopeColor="#1E293B"
+            gableColor="#C25E48"
+          />
+
+          <LeftWallPlane x={cx - 30} y={cy - 30}>
+            {/* Upper apartment windows */}
+            <rect x="5" y="4" width="8" height="8" fill={warmGlass} stroke="#F8FAFC" strokeWidth="0.8" />
+            <rect x="17" y="4" width="8" height="8" fill={warmGlass} stroke="#F8FAFC" strokeWidth="0.8" />
+            {/* "BOOKS" sign band */}
+            <rect x="2" y="14" width="26" height="5.5" fill="#FEF3C7" stroke="#78350F" strokeWidth="0.5" />
+            <text
+              x="15"
+              y="18.3"
+              textAnchor="middle"
+              fill="#14532D"
+              fontSize="4.2"
+              fontWeight="700"
+              letterSpacing="0.6"
+            >
+              BOOKS
+            </text>
+            {/* Display window with colorful miniature book spines */}
+            <rect x="3" y="21" width="15" height="10" fill={warmGlass} stroke="#78350F" strokeWidth="0.7" />
+            {[
+              [4.5, '#DC2626'],
+              [6.5, '#2563EB'],
+              [8.5, '#059669'],
+              [10.5, '#D97706'],
+              [12.5, '#7C3AED'],
+              [14.5, '#0284C7'],
+            ].map(([bx, color]) => (
+              <rect key={String(bx)} x={Number(bx)} y="24" width="1.6" height="6" fill={String(color)} />
+            ))}
+            {/* Door */}
+            <rect x="20" y="21" width="6.5" height="12" fill="#78350F" stroke="#451A03" strokeWidth="0.6" />
+          </LeftWallPlane>
+
+          {/* Outdoor bookstall cart on right side */}
+          <g transform={`translate(${cx + 20}, ${cy + 8})`}>
+            <rect x="-6" y="-7" width="12" height="6" rx="1" fill="#92400E" />
+            <rect x="-4.5" y="-9.5" width="3" height="3" fill="#DC2626" />
+            <rect x="-1" y="-9.5" width="3" height="3" fill="#2563EB" />
+            <rect x="2.5" y="-9.5" width="3" height="3" fill="#16A34A" />
+          </g>
+        </g>
+      );
+
+    case 'bakery':
+      return (
+        <g>
+          <polygon points={isoDiamondPoints(cx, cy + 5, 40, 20)} fill="#E7E5E4" />
+          {/* Warm honey-sandstone walls */}
+          <IsoPrism
+            cx={cx}
+            cy={cy + 3}
+            rx={28}
+            ry={14}
+            height={26}
+            topColor="#FDE68A"
+            leftColor="#FEF3C7"
+            rightColor="#FDE68A"
+          />
+          {/* Brick oven chimney */}
+          <rect x={cx + 12} y={cy - 40} width={7} height={18} fill="#9A3412" />
+          {isRunning && (
+            <circle cx={cx + 15.5} cy={cy - 45} r={3.5} fill="#F8FAFC" opacity="0.7" className="animate-smoke" />
+          )}
+          <IsoGableRoof
+            cx={cx}
+            cy={cy - 23}
+            rx={30}
+            ry={15}
+            peakHeight={15}
+            leftSlopeColor="#B91C1C"
+            rightSlopeColor="#991B1B"
+            gableColor="#FEF3C7"
+          />
+          <LeftWallPlane x={cx - 28} y={cy - 23}>
+            <rect x="3" y="2" width="22" height="5.5" rx="0.8" fill="#78350F" />
+            <text x="14" y="6.2" textAnchor="middle" fill="#FEF3C7" fontSize="3.8" fontWeight="700" letterSpacing="0.4">
+              BAKERY
+            </text>
+            {/* Red & cream striped awning */}
+            <polygon points="1,9 26,9 28,14 3,14" fill="#DC2626" />
+            {[4, 10, 16, 22].map((sx) => (
+              <polygon key={sx} points={`${sx},9 ${sx + 3},9 ${sx + 4},14 ${sx + 1},14`} fill="#FFFBEB" />
+            ))}
+            {/* Bread display window */}
+            <rect x="3" y="15" width="13" height="8" fill={warmGlass} stroke="#78350F" strokeWidth="0.6" />
+            <ellipse cx="6.5" cy="20.5" rx="2" ry="1.2" fill="#D97706" />
+            <ellipse cx="10.5" cy="20.5" rx="2" ry="1.2" fill="#B45309" />
+            <ellipse cx="13.5" cy="20.5" rx="1.6" ry="1.1" fill="#F59E0B" />
+            <rect x="18.5" y="15" width="6.5" height="11" fill="#78350F" />
+          </LeftWallPlane>
+          {/* Wooden pastry sign outside */}
+          <ellipse cx={cx + 22} cy={cy + 9} rx={3.5} ry={2} fill="#D97706" />
+        </g>
+      );
+
+    case 'townhouse':
+      return (
+        <g>
+          {/* Red-brick facade with white stone trim & dark slate roof */}
+          <IsoPrism
+            cx={cx}
+            cy={cy + 4}
+            rx={28}
+            ry={14}
+            height={42}
+            topColor="#475569"
+            leftColor="#B4533C"
+            rightColor="#933F2B"
+          />
+          {/* White stone cornice band */}
+          <IsoPrism
+            cx={cx}
+            cy={cy - 38}
+            rx={29}
+            ry={14.5}
+            height={3}
+            topColor="#F8FAFC"
+            leftColor="#F1F5F9"
+            rightColor="#CBD5E1"
+          />
+          <IsoGableRoof
+            cx={cx}
+            cy={cy - 41}
+            rx={30}
+            ry={15}
+            peakHeight={14}
+            leftSlopeColor="#334155"
+            rightSlopeColor="#1E293B"
+            gableColor="#B4533C"
+          />
+          <LeftWallPlane x={cx - 28} y={cy - 38}>
+            {/* Two stories of sash windows with white sills & flower boxes */}
+            {[5, 19].map((wy, rowIdx) => (
+              <g key={wy}>
+                {[4, 16].map((wx) => (
+                  <g key={wx}>
+                    <rect x={wx} y={wy} width="7.5" height="9" fill={coolGlass} stroke="#F8FAFC" strokeWidth="0.9" />
+                    <line x1={wx + 3.75} y1={wy} x2={wx + 3.75} y2={wy + 9} stroke="#F8FAFC" strokeWidth="0.5" />
+                    <line x1={wx} y1={wy + 4.5} x2={wx + 7.5} y2={wy + 4.5} stroke="#F8FAFC" strokeWidth="0.5" />
+                    {rowIdx === 1 && (
+                      <rect x={wx - 0.5} y={wy + 8.5} width="8.5" height="2" fill="#15803D" />
+                    )}
+                  </g>
+                ))}
+              </g>
+            ))}
+            {/* Front stoop door */}
+            <rect x="11" y="31" width="6" height="11" fill="#1E293B" stroke="#F8FAFC" strokeWidth="0.7" />
+          </LeftWallPlane>
+          <RightWallPlane x={cx} y={cy - 24}>
+            {[5, 19].map((wy) => (
+              <g key={wy}>
+                <rect x="5" y={wy} width="7" height="8.5" fill={warmGlass} stroke="#F8FAFC" strokeWidth="0.8" />
+                <rect x="16" y={wy} width="7" height="8.5" fill={warmGlass} stroke="#F8FAFC" strokeWidth="0.8" />
+              </g>
+            ))}
+          </RightWallPlane>
         </g>
       );
 
     case 'apartments':
       return (
         <g>
+          {/* Warm limestone & terracotta 3-story courtyard building */}
           <IsoPrism
             cx={cx}
             cy={cy + 5}
             rx={34}
             ry={17}
             height={52}
-            topColor={theme.pathColor}
-            leftColor={theme.wallLight}
-            rightColor={theme.wallDark}
+            topColor="#E2E8F0"
+            leftColor="#F1E7D8"
+            rightColor="#D6C8B4"
           />
-          {/* Rooftop parapet & garden */}
+          {/* Rooftop terrace garden */}
           <IsoPrism
             cx={cx}
             cy={cy - 47}
+            rx={26}
+            ry={13}
+            height={5}
+            topColor={theme.foliagePrimary}
+            leftColor="#9A3412"
+            rightColor="#7C2D12"
+          />
+          <LeftWallPlane x={cx - 34} y={cy - 47}>
+            {[6, 20, 34].map((wy) => (
+              <g key={wy}>
+                {[4, 14, 24].map((wx) => (
+                  <g key={wx}>
+                    <rect x={wx} y={wy} width="6.5" height="8" fill={warmGlass} stroke="#475569" strokeWidth="0.6" />
+                    {/* Balcony rail */}
+                    {wy < 30 && (
+                      <rect x={wx - 0.8} y={wy + 6} width="8.1" height="3" fill="none" stroke="#334155" strokeWidth="0.7" />
+                    )}
+                  </g>
+                ))}
+              </g>
+            ))}
+            <rect x="14" y="42" width="6" height="10" fill="#0F766E" stroke="#1E293B" strokeWidth="0.6" />
+          </LeftWallPlane>
+          <RightWallPlane x={cx} y={cy - 30}>
+            {[6, 20, 34].map((wy) => (
+              <g key={wy}>
+                <rect x="6" y={wy} width="8" height="8" fill={coolGlass} stroke="#475569" strokeWidth="0.6" />
+                <rect x="19" y={wy} width="8" height="8" fill={coolGlass} stroke="#475569" strokeWidth="0.6" />
+              </g>
+            ))}
+          </RightWallPlane>
+        </g>
+      );
+
+    case 'clocktower':
+      return (
+        <g>
+          {/* Base stone plinth */}
+          <IsoPrism
+            cx={cx}
+            cy={cy + 6}
+            rx={26}
+            ry={13}
+            height={10}
+            topColor="#94A3B8"
+            leftColor="#CBD5E1"
+            rightColor="#94A3B8"
+          />
+          {/* Brick/stone tower shaft */}
+          <IsoPrism
+            cx={cx}
+            cy={cy - 4}
+            rx={20}
+            ry={10}
+            height={58}
+            topColor="#475569"
+            leftColor="#E7E5E4"
+            rightColor="#CBD5E1"
+          />
+          {/* Verdigris copper spire */}
+          <IsoPyramidRoof
+            cx={cx}
+            cy={cy - 62}
             rx={22}
             ry={11}
-            height={7}
-            topColor={theme.foliagePrimary}
-            leftColor={theme.roofPrimary}
-            rightColor={theme.roofSecondary}
+            peakHeight={28}
+            leftColor="#0D9488"
+            rightColor="#0F766E"
           />
-          {[-38, -24, -10].map((dy, i) => (
-            <g key={i}>
-              <polygon
-                points={`${cx - 25},${cy + dy} ${cx - 16},${cy + dy + 4.5} ${cx - 16},${cy + dy + 10.5} ${cx - 25},${cy + dy + 6}`}
-                fill={winGlow}
-                stroke={winStroke}
-              />
-              <polygon
-                points={`${cx - 12},${cy + dy + 6.5} ${cx - 3},${cy + dy + 11} ${cx - 3},${cy + dy + 17} ${cx - 12},${cy + dy + 12.5}`}
-                fill={winGlow}
-                stroke={winStroke}
-              />
-              <polygon
-                points={`${cx + 8},${cy + dy + 6} ${cx + 22},${cy + dy - 1} ${cx + 22},${cy + dy + 5} ${cx + 8},${cy + dy + 12}`}
-                fill={winGlow}
-                stroke={winStroke}
-              />
-            </g>
-          ))}
+          {/* Finial */}
+          <line x1={cx} y1={cy - 90} x2={cx} y2={cy - 98} stroke="#F59E0B" strokeWidth="1.8" />
+          <circle cx={cx} cy={cy - 98} r={2} fill="#FBBF24" />
+          {/* Clock faces & tall lancet belfry slits */}
+          <LeftWallPlane x={cx - 20} y={cy - 62}>
+            <circle cx="10" cy="12" r="6.5" fill="#FFFFFF" stroke="#B45309" strokeWidth="1.2" />
+            <line x1="10" y1="12" x2="10" y2="7.5" stroke="#0F172A" strokeWidth="1.1" />
+            <line x1="10" y1="12" x2="13.5" y2="12.5" stroke="#0F172A" strokeWidth="1.1" />
+            <rect x="7" y="25" width="6" height="14" rx="3" fill="#334155" />
+            <rect x="7" y="45" width="6" height="12" fill="#78350F" />
+          </LeftWallPlane>
+          <RightWallPlane x={cx} y={cy - 52}>
+            <circle cx="10" cy="12" r="6.5" fill="#FEF3C7" stroke="#B45309" strokeWidth="1.2" />
+            <line x1="10" y1="12" x2="10" y2="8" stroke="#0F172A" strokeWidth="1" />
+            <line x1="10" y1="12" x2="13" y2="11" stroke="#0F172A" strokeWidth="1" />
+            <rect x="7" y="25" width="6" height="14" rx="3" fill="#334155" />
+          </RightWallPlane>
         </g>
       );
 
     case 'tram_station':
       return (
         <g>
+          {/* Platform & steel tracks */}
           <IsoPrism
             cx={cx}
             cy={cy + 6}
-            rx={38}
-            ry={19}
-            height={6}
-            topColor={theme.pathColor}
-            leftColor="#CBD5E1"
-            rightColor="#94A3B8"
+            rx={42}
+            ry={21}
+            height={5}
+            topColor="#CBD5E1"
+            leftColor="#94A3B8"
+            rightColor="#64748B"
           />
+          <line x1={cx - 32} y1={cy + 14} x2={cx + 26} y2={cy - 15} stroke="#475569" strokeWidth="1.5" />
+          <line x1={cx - 26} y1={cy + 17} x2={cx + 32} y2={cy - 12} stroke="#475569" strokeWidth="1.5" />
+          {/* Brick station house */}
           <IsoPrism
-            cx={cx}
-            cy={cy}
-            rx={30}
-            ry={15}
+            cx={cx - 8}
+            cy={cy - 1}
+            rx={22}
+            ry={11}
             height={22}
-            topColor={theme.roofPrimary}
-            leftColor={theme.accentColor}
-            rightColor="#1E293B"
+            topColor="#475569"
+            leftColor="#B4533C"
+            rightColor="#933F2B"
           />
           <IsoGableRoof
-            cx={cx}
-            cy={cy - 22}
-            rx={34}
-            ry={17}
-            peakHeight={12}
-            leftSlopeColor={theme.roofPrimary}
-            rightSlopeColor={theme.roofSecondary}
-            gableColor={theme.wallLight}
+            cx={cx - 8}
+            cy={cy - 23}
+            rx={25}
+            ry={12.5}
+            peakHeight={11}
+            leftSlopeColor="#1E293B"
+            rightSlopeColor="#0F172A"
+            gableColor="#F8FAFC"
           />
-        </g>
-      );
-
-    case 'greenhouse':
-    case 'conservatory':
-      return (
-        <g>
+          <LeftWallPlane x={cx - 30} y={cy - 23}>
+            <rect x="2" y="2" width="18" height="5" fill="#0F172A" />
+            <text x="11" y="5.8" textAnchor="middle" fill="#F8FAFC" fontSize="3.4" fontWeight="700">
+              TRAMWAY
+            </text>
+            <rect x="4" y="10" width="6" height="8" fill={warmGlass} stroke="#F8FAFC" strokeWidth="0.6" />
+            <rect x="13" y="10" width="6" height="12" fill="#0F766E" />
+          </LeftWallPlane>
+          {/* Vintage Red/Cream Tramcar */}
           <IsoPrism
-            cx={cx}
-            cy={cy + 5}
-            rx={34}
-            ry={17}
-            height={9}
-            topColor={theme.foliagePrimary}
-            leftColor={theme.wallLight}
-            rightColor={theme.wallDark}
+            cx={cx + 12}
+            cy={cy + 6}
+            rx={14}
+            ry={7}
+            height={11}
+            topColor="#F8FAFC"
+            leftColor="#DC2626"
+            rightColor="#B91C1C"
           />
           <IsoPrism
-            cx={cx}
-            cy={cy - 4}
-            rx={30}
-            ry={15}
-            height={22}
-            topColor="rgba(186,230,253,0.72)"
-            leftColor="rgba(186,230,253,0.65)"
-            rightColor="rgba(125,211,252,0.55)"
-            stroke="#475569"
+            cx={cx + 12}
+            cy={cy - 3}
+            rx={14}
+            ry={7}
+            height={5}
+            topColor="#CBD5E1"
+            leftColor={warmGlass}
+            rightColor={coolGlass}
           />
-          <IsoGableRoof
-            cx={cx}
-            cy={cy - 26}
-            rx={31}
-            ry={15.5}
-            peakHeight={15}
-            leftSlopeColor="rgba(224,242,254,0.8)"
-            rightSlopeColor="rgba(186,230,253,0.72)"
-            gableColor="rgba(224,242,254,0.85)"
-          />
-          {/* Inner foliage peek */}
-          <circle cx={cx - 4} cy={cy - 10} r={8} fill={theme.foliagePrimary} opacity="0.85" />
-          <circle cx={cx + 8} cy={cy - 8} r={6} fill={theme.foliageSecondary} opacity="0.85" />
         </g>
       );
 
@@ -538,10 +767,10 @@ function renderStructureArt(
           <IsoPrism
             cx={cx}
             cy={cy + 6}
-            rx={42}
-            ry={21}
+            rx={44}
+            ry={22}
             height={6}
-            topColor={theme.pathColor}
+            topColor="#E2E8F0"
             leftColor="#CBD5E1"
             rightColor="#94A3B8"
           />
@@ -550,19 +779,35 @@ function renderStructureArt(
             cy={cy}
             rx={36}
             ry={18}
-            height={32}
-            topColor={theme.wallDark}
-            leftColor={theme.wallLight}
-            rightColor={theme.wallDark}
+            height={30}
+            topColor="#CBD5E1"
+            leftColor="#F8FAFC"
+            rightColor="#E2E8F0"
           />
-          {/* Classical dome */}
-          <ellipse cx={cx} cy={cy - 34} rx={20} ry={10} fill={theme.roofSecondary} />
+          {/* Verdigris Copper Classical Dome */}
+          <ellipse cx={cx} cy={cy - 32} rx={21} ry={10.5} fill="#0F766E" />
           <path
-            d={`M ${cx - 18} ${cy - 34} A 18 22 0 0 1 ${cx + 18} ${cy - 34} Z`}
-            fill={theme.roofPrimary}
-            stroke="rgba(15,23,42,0.16)"
+            d={`M ${cx - 19} ${cy - 32} A 19 22 0 0 1 ${cx + 19} ${cy - 32} Z`}
+            fill="#0D9488"
+            stroke="#115E59"
+            strokeWidth="0.8"
           />
-          <circle cx={cx} cy={cy - 57} r={3} fill="#FBBF24" />
+          <circle cx={cx} cy={cy - 55} r={3} fill="#FBBF24" />
+          <LeftWallPlane x={cx - 36} y={cy - 30}>
+            <rect x="3" y="1" width="30" height="6" fill="#E2E8F0" stroke="#94A3B8" strokeWidth="0.5" />
+            <text x="18" y="5.4" textAnchor="middle" fill="#1E293B" fontSize="4.1" fontWeight="700" letterSpacing="0.7">
+              MUSEUM
+            </text>
+            {[5, 11, 23, 29].map((cxCol) => (
+              <rect key={cxCol} x={cxCol} y="8" width="2.4" height="22" fill="#FFFFFF" stroke="#94A3B8" strokeWidth="0.4" />
+            ))}
+            <rect x="14.5" y="14" width="7" height="16" fill="#475569" />
+          </LeftWallPlane>
+          <RightWallPlane x={cx} y={cy - 12}>
+            {[6, 16, 26].map((wx) => (
+              <rect key={wx} x={wx} y="-9" width="5" height="14" rx="2.5" fill={coolGlass} stroke="#64748B" strokeWidth="0.5" />
+            ))}
+          </RightWallPlane>
         </g>
       );
 
@@ -571,40 +816,128 @@ function renderStructureArt(
         <g>
           <IsoPrism
             cx={cx}
+            cy={cy + 6}
+            rx={38}
+            ry={19}
+            height={5}
+            topColor="#CBD5E1"
+            leftColor="#94A3B8"
+            rightColor="#64748B"
+          />
+          <IsoPrism
+            cx={cx}
+            cy={cy + 1}
+            rx={32}
+            ry={16}
+            height={26}
+            topColor="#64748B"
+            leftColor="#F1F5F9"
+            rightColor="#CBD5E1"
+          />
+          {/* Brass & copper dome */}
+          <ellipse cx={cx} cy={cy - 26} rx={26} ry={13} fill="#475569" />
+          <path
+            d={`M ${cx - 24} ${cy - 26} A 24 27 0 0 1 ${cx + 24} ${cy - 26} Z`}
+            fill={night ? '#D97706' : '#334155'}
+            stroke="#1E293B"
+            strokeWidth="0.8"
+          />
+          {/* Brass telescope barrel */}
+          <line x1={cx + 5} y1={cy - 40} x2={cx + 25} y2={cy - 58} stroke="#F59E0B" strokeWidth="4.5" strokeLinecap="round" />
+          <circle cx={cx + 25} cy={cy - 58} r={3} fill="#FEF08A" />
+          <LeftWallPlane x={cx - 32} y={cy - 25}>
+            {[5, 13, 21].map((wx) => (
+              <rect key={wx} x={wx} y="6" width="5" height="9" rx="2.5" fill={warmGlass} stroke="#475569" strokeWidth="0.6" />
+            ))}
+          </LeftWallPlane>
+        </g>
+      );
+
+    case 'plaza_fountain':
+      return (
+        <g>
+          <polygon points={isoDiamondPoints(cx, cy + 5, 48, 24)} fill="#E7E5E4" stroke="rgba(15,23,42,0.1)" />
+          <ellipse cx={cx} cy={cy + 3} rx={24} ry={12} fill={theme.waterColor} stroke="#94A3B8" strokeWidth="2.2" />
+          <ellipse cx={cx} cy={cy - 10} rx={10} ry={5} fill="#E2E8F0" stroke="#94A3B8" strokeWidth="0.7" />
+          <rect x={cx - 3} y={cy - 22} width={6} height={22} rx={2} fill="#CBD5E1" />
+          <path
+            d={`M ${cx} ${cy - 24} Q ${cx - 10} ${cy - 18} ${cx - 12} ${cy - 1} M ${cx} ${cy - 24} Q ${cx + 10} ${cy - 18} ${cx + 12} ${cy - 1}`}
+            fill="none"
+            stroke="#BAE6FD"
+            strokeWidth="1.7"
+            strokeLinecap="round"
+          />
+          {/* Corner park benches & streetlamp */}
+          <rect x={cx - 34} y={cy + 2} width={10} height={3.5} rx={1} fill="#78350F" />
+          <rect x={cx + 24} y={cy + 2} width={10} height={3.5} rx={1} fill="#78350F" />
+          <line x1={cx - 26} y1={cy - 10} x2={cx - 26} y2={cy - 24} stroke="#1E293B" strokeWidth="1.4" />
+          <circle cx={cx - 26} cy={cy - 25} r={2.5} fill={night ? '#FDE047' : '#FEF3C7'} />
+        </g>
+      );
+
+    case 'greenhouse':
+    case 'conservatory':
+      return (
+        <g>
+          {/* Brick knee-wall base */}
+          <IsoPrism
+            cx={cx}
             cy={cy + 5}
             rx={36}
             ry={18}
-            height={28}
-            topColor={theme.wallDark}
-            leftColor={theme.wallLight}
-            rightColor={theme.wallDark}
+            height={10}
+            topColor={theme.foliagePrimary}
+            leftColor="#B4533C"
+            rightColor="#933F2B"
           />
-          <ellipse cx={cx} cy={cy - 24} rx={26} ry={13} fill="#334155" />
-          <path
-            d={`M ${cx - 25} ${cy - 24} A 25 28 0 0 1 ${cx + 25} ${cy - 24} Z`}
-            fill={theme.isNight ? '#D97706' : '#475569'}
-            stroke="rgba(15,23,42,0.22)"
+          {/* Iron-and-glass frame */}
+          <IsoPrism
+            cx={cx}
+            cy={cy - 5}
+            rx={32}
+            ry={16}
+            height={22}
+            topColor="rgba(186,230,253,0.75)"
+            leftColor="rgba(186,230,253,0.68)"
+            rightColor="rgba(125,211,252,0.58)"
+            stroke="#F8FAFC"
           />
-          {/* Telescope slit & brass lens */}
-          <line x1={cx + 6} y1={cy - 40} x2={cx + 24} y2={cy - 56} stroke="#F59E0B" strokeWidth="4" strokeLinecap="round" />
-          <circle cx={cx + 24} cy={cy - 56} r={3} fill="#FEF08A" />
+          <IsoGableRoof
+            cx={cx}
+            cy={cy - 27}
+            rx={33}
+            ry={16.5}
+            peakHeight={16}
+            leftSlopeColor="rgba(224,242,254,0.82)"
+            rightSlopeColor="rgba(186,230,253,0.74)"
+            gableColor="rgba(224,242,254,0.88)"
+          />
+          {/* Lush indoor foliage */}
+          <circle cx={cx - 6} cy={cy - 12} r={9} fill="#15803D" opacity="0.9" />
+          <circle cx={cx + 9} cy={cy - 10} r={7} fill="#16A34A" opacity="0.9" />
+          <circle cx={cx + 2} cy={cy - 18} r={6} fill="#22C55E" opacity="0.85" />
+          <LeftWallPlane x={cx - 32} y={cy - 27}>
+            {[8, 16, 24].map((mx) => (
+              <line key={mx} x1={mx} y1="0" x2={mx} y2="22" stroke="#FFFFFF" strokeWidth="0.8" />
+            ))}
+          </LeftWallPlane>
         </g>
       );
 
     case 'cottage':
       return (
         <g>
+          {/* Timber-framed whitewashed cottage */}
           <IsoPrism
             cx={cx}
             cy={cy + 5}
             rx={26}
             ry={13}
             height={22}
-            topColor={theme.wallDark}
-            leftColor={theme.wallLight}
-            rightColor={theme.wallDark}
+            topColor="#E2D9C8"
+            leftColor="#FFFBEB"
+            rightColor="#E7E5E4"
           />
-          {/* Chimney */}
           <rect x={cx - 16} y={cy - 38} width={6} height={18} fill="#78716C" />
           {isRunning && (
             <g className="animate-smoke">
@@ -618,184 +951,18 @@ function renderStructureArt(
             rx={29}
             ry={14.5}
             peakHeight={18}
-            leftSlopeColor={theme.roofPrimary}
-            rightSlopeColor={theme.roofSecondary}
-            gableColor={theme.wallLight}
+            leftSlopeColor="#B45309"
+            rightSlopeColor="#92400E"
+            gableColor="#FFFBEB"
           />
-          <polygon
-            points={`${cx - 16},${cy - 8} ${cx - 8},${cy - 4} ${cx - 8},${cy + 2} ${cx - 16},${cy - 2}`}
-            fill={winGlow}
-            stroke={winStroke}
-          />
-        </g>
-      );
-
-    case 'bakery':
-      return (
-        <g>
-          <IsoPrism
-            cx={cx}
-            cy={cy + 5}
-            rx={28}
-            ry={14}
-            height={25}
-            topColor={theme.wallDark}
-            leftColor="#FEF3C7"
-            rightColor="#FDE68A"
-          />
-          <IsoGableRoof
-            cx={cx}
-            cy={cy - 20}
-            rx={30}
-            ry={15}
-            peakHeight={15}
-            leftSlopeColor={theme.roofPrimary}
-            rightSlopeColor={theme.roofSecondary}
-            gableColor="#FEF3C7"
-          />
-          <polygon
-            points={`${cx - 20},${cy - 6} ${cx - 4},${cy + 2} ${cx - 4},${cy + 7} ${cx - 20},${cy - 1}`}
-            fill={theme.accentColor}
-          />
-          <rect x={cx + 12} y={cy - 36} width={7} height={18} fill="#9A3412" />
-          {isRunning && (
-            <circle cx={cx + 15.5} cy={cy - 42} r={3.5} fill="#F8FAFC" opacity="0.65" className="animate-smoke" />
-          )}
-        </g>
-      );
-
-    case 'windmill':
-      return (
-        <g>
-          <IsoPrism
-            cx={cx}
-            cy={cy + 6}
-            rx={20}
-            ry={10}
-            height={44}
-            topColor={theme.roofSecondary}
-            leftColor={theme.wallLight}
-            rightColor={theme.wallDark}
-          />
-          <IsoPyramidRoof
-            cx={cx}
-            cy={cy - 38}
-            rx={22}
-            ry={11}
-            peakHeight={16}
-            leftColor={theme.roofPrimary}
-            rightColor={theme.roofSecondary}
-          />
-          {/* Windmill blades */}
-          <g transform={`translate(${cx - 14}, ${cy - 30})`}>
-            <line x1="-18" y1="-18" x2="18" y2="18" stroke="#78350F" strokeWidth="2.5" />
-            <line x1="-18" y1="18" x2="18" y2="-18" stroke="#78350F" strokeWidth="2.5" />
-            <polygon points="-16,-16 -6,-12 -10,-4 -18,-10" fill="#FEF3C7" stroke="#78350F" strokeWidth="0.7" />
-            <polygon points="16,16 6,12 10,4 18,10" fill="#FEF3C7" stroke="#78350F" strokeWidth="0.7" />
-            <polygon points="-16,16 -12,6 -4,10 -10,18" fill="#FEF3C7" stroke="#78350F" strokeWidth="0.7" />
-            <polygon points="16,-16 12,-6 4,-10 10,-18" fill="#FEF3C7" stroke="#78350F" strokeWidth="0.7" />
-            <circle cx="0" cy="0" r="3" fill="#451A03" />
-          </g>
-        </g>
-      );
-
-    case 'market_stall':
-      return (
-        <g>
-          <ellipse cx={cx} cy={cy + 5} rx={30} ry={15} fill={theme.pathColor} />
-          <IsoPrism
-            cx={cx - 8}
-            cy={cy + 2}
-            rx={14}
-            ry={7}
-            height={14}
-            topColor={theme.roofPrimary}
-            leftColor="#FDE68A"
-            rightColor="#F59E0B"
-          />
-          <IsoPrism
-            cx={cx + 12}
-            cy={cy + 6}
-            rx={13}
-            ry={6.5}
-            height={13}
-            topColor={theme.accentColor}
-            leftColor="#E2E8F0"
-            rightColor="#CBD5E1"
-          />
-        </g>
-      );
-
-    case 'chapel':
-      return (
-        <g>
-          <IsoPrism
-            cx={cx}
-            cy={cy + 5}
-            rx={28}
-            ry={14}
-            height={30}
-            topColor={theme.roofSecondary}
-            leftColor={theme.wallLight}
-            rightColor={theme.wallDark}
-          />
-          <IsoGableRoof
-            cx={cx}
-            cy={cy - 25}
-            rx={30}
-            ry={15}
-            peakHeight={15}
-            leftSlopeColor={theme.roofPrimary}
-            rightSlopeColor={theme.roofSecondary}
-            gableColor={theme.wallLight}
-          />
-          <IsoPrism
-            cx={cx - 10}
-            cy={cy - 22}
-            rx={9}
-            ry={4.5}
-            height={28}
-            topColor={theme.wallDark}
-            leftColor={theme.wallLight}
-            rightColor={theme.wallDark}
-          />
-          <IsoPyramidRoof
-            cx={cx - 10}
-            cy={cy - 50}
-            rx={10}
-            ry={5}
-            peakHeight={18}
-            leftColor={theme.roofPrimary}
-            rightColor={theme.roofSecondary}
-          />
-        </g>
-      );
-
-    case 'barn':
-      return (
-        <g>
-          <IsoPrism
-            cx={cx}
-            cy={cy + 5}
-            rx={32}
-            ry={16}
-            height={26}
-            topColor="#7F1D1D"
-            leftColor="#B91C1C"
-            rightColor="#991B1B"
-          />
-          <IsoGableRoof
-            cx={cx}
-            cy={cy - 21}
-            rx={34}
-            ry={17}
-            peakHeight={18}
-            leftSlopeColor="#78350F"
-            rightSlopeColor="#451A03"
-            gableColor="#B91C1C"
-          />
-          {/* White X barn doors */}
-          <polygon points={`${cx - 14},${cy - 8} ${cx - 4},${cy - 3} ${cx - 4},${cy + 8} ${cx - 14},${cy + 3}`} fill="#FEF2F2" />
+          <LeftWallPlane x={cx - 26} y={cy - 17}>
+            {/* Half-timber beams */}
+            <line x1="2" y1="0" x2="2" y2="22" stroke="#78350F" strokeWidth="1.2" />
+            <line x1="24" y1="0" x2="24" y2="22" stroke="#78350F" strokeWidth="1.2" />
+            <line x1="0" y1="11" x2="26" y2="11" stroke="#78350F" strokeWidth="1" />
+            <rect x="6" y="4" width="6" height="6" fill={warmGlass} stroke="#78350F" strokeWidth="0.6" />
+            <rect x="16" y="10" width="6" height="12" fill="#78350F" />
+          </LeftWallPlane>
         </g>
       );
 
@@ -808,7 +975,7 @@ function renderStructureArt(
             rx={34}
             ry={17}
             height={32}
-            topColor={theme.roofSecondary}
+            topColor="#78350F"
             leftColor="#FEF3C7"
             rightColor="#E2D9C8"
           />
@@ -818,20 +985,90 @@ function renderStructureArt(
             rx={36}
             ry={18}
             peakHeight={17}
-            leftSlopeColor={theme.roofPrimary}
-            rightSlopeColor={theme.roofSecondary}
+            leftSlopeColor="#9A3412"
+            rightSlopeColor="#7C2D12"
             gableColor="#E2D9C8"
           />
-          <polygon
-            points={`${cx - 22},${cy - 14} ${cx - 10},${cy - 8} ${cx - 10},${cy - 2} ${cx - 22},${cy - 8}`}
-            fill={winGlow}
-            stroke={winStroke}
-          />
-          <polygon
-            points={`${cx + 8},${cy - 8} ${cx + 20},${cy - 14} ${cx + 20},${cy - 8} ${cx + 8},${cy - 2}`}
-            fill={winGlow}
-            stroke={winStroke}
-          />
+          <LeftWallPlane x={cx - 34} y={cy - 27}>
+            <rect x="4" y="4" width="8" height="7" fill={warmGlass} stroke="#78350F" strokeWidth="0.8" />
+            <rect x="20" y="4" width="8" height="7" fill={warmGlass} stroke="#78350F" strokeWidth="0.8" />
+            <rect x="11" y="12" width="10" height="5" fill="#78350F" />
+            <text x="16" y="15.8" textAnchor="middle" fill="#FEF3C7" fontSize="3.8" fontWeight="700">
+              INN
+            </text>
+            <rect x="5" y="19" width="9" height="8" fill={warmGlass} stroke="#78350F" strokeWidth="0.7" />
+            <rect x="19" y="19" width="7" height="13" fill="#78350F" />
+          </LeftWallPlane>
+        </g>
+      );
+
+    case 'market_stall':
+      return (
+        <g>
+          <polygon points={isoDiamondPoints(cx, cy + 5, 42, 21)} fill="#E7E5E4" />
+          {/* Stall 1: Red/Cream */}
+          <IsoPrism cx={cx - 10} cy={cy + 2} rx={14} ry={7} height={14} topColor="#DC2626" leftColor="#FEF3C7" rightColor="#FDE68A" />
+          {/* Produce crates */}
+          <circle cx={cx - 16} cy={cy + 5} r={2.2} fill="#EF4444" />
+          <circle cx={cx - 12} cy={cy + 7} r={2.2} fill="#22C55E" />
+          {/* Stall 2: Teal/Cream */}
+          <IsoPrism cx={cx + 12} cy={cy + 6} rx={13} ry={6.5} height={13} topColor="#0F766E" leftColor="#F8FAFC" rightColor="#E2E8F0" />
+          <circle cx={cx + 8} cy={cy + 10} r={2} fill="#F59E0B" />
+        </g>
+      );
+
+    case 'chapel':
+      return (
+        <g>
+          <IsoPrism cx={cx} cy={cy + 5} rx={28} ry={14} height={30} topColor="#475569" leftColor="#E7E5E4" rightColor="#CBD5E1" />
+          <IsoGableRoof cx={cx} cy={cy - 25} rx={30} ry={15} peakHeight={15} leftSlopeColor="#334155" rightSlopeColor="#1E293B" gableColor="#E7E5E4" />
+          <IsoPrism cx={cx - 10} cy={cy - 22} rx={9} ry={4.5} height={28} topColor="#64748B" leftColor="#E7E5E4" rightColor="#CBD5E1" />
+          <IsoPyramidRoof cx={cx - 10} cy={cy - 50} rx={10} ry={5} peakHeight={18} leftColor="#334155" rightColor="#1E293B" />
+          <LeftWallPlane x={cx - 28} y={cy - 25}>
+            <circle cx="14" cy="9" r="4" fill="#38BDF8" stroke="#475569" strokeWidth="0.7" />
+            <rect x="11" y="17" width="6" height="13" rx="3" fill="#78350F" />
+          </LeftWallPlane>
+        </g>
+      );
+
+    case 'barn':
+      return (
+        <g>
+          <IsoPrism cx={cx} cy={cy + 5} rx={32} ry={16} height={26} topColor="#7F1D1D" leftColor="#B91C1C" rightColor="#991B1B" />
+          <IsoGableRoof cx={cx} cy={cy - 21} rx={34} ry={17} peakHeight={18} leftSlopeColor="#78350F" rightSlopeColor="#451A03" gableColor="#B91C1C" />
+          <LeftWallPlane x={cx - 32} y={cy - 21}>
+            <rect x="9" y="11" width="14" height="15" fill="#7F1D1D" stroke="#FEF2F2" strokeWidth="1" />
+            <line x1="9" y1="11" x2="23" y2="26" stroke="#FEF2F2" strokeWidth="0.9" />
+            <line x1="23" y1="11" x2="9" y2="26" stroke="#FEF2F2" strokeWidth="0.9" />
+          </LeftWallPlane>
+        </g>
+      );
+
+    case 'windmill':
+      return (
+        <g>
+          <IsoPrism cx={cx} cy={cy + 6} rx={20} ry={10} height={44} topColor="#78350F" leftColor="#F5F5F4" rightColor="#D6D3D1" />
+          <IsoPyramidRoof cx={cx} cy={cy - 38} rx={22} ry={11} peakHeight={16} leftColor="#9A3412" rightColor="#7C2D12" />
+          <g transform={`translate(${cx - 14}, ${cy - 30})`}>
+            <line x1="-18" y1="-18" x2="18" y2="18" stroke="#78350F" strokeWidth="2.5" />
+            <line x1="-18" y1="18" x2="18" y2="-18" stroke="#78350F" strokeWidth="2.5" />
+            <polygon points="-16,-16 -6,-12 -10,-4 -18,-10" fill="#FEF3C7" stroke="#78350F" strokeWidth="0.7" />
+            <polygon points="16,16 6,12 10,4 18,10" fill="#FEF3C7" stroke="#78350F" strokeWidth="0.7" />
+            <polygon points="-16,16 -12,6 -4,10 -10,18" fill="#FEF3C7" stroke="#78350F" strokeWidth="0.7" />
+            <polygon points="16,-16 12,-6 4,-10 10,-18" fill="#FEF3C7" stroke="#78350F" strokeWidth="0.7" />
+            <circle cx="0" cy="0" r="3" fill="#451A03" />
+          </g>
+        </g>
+      );
+
+    case 'well':
+      return (
+        <g>
+          <ellipse cx={cx} cy={cy + 4} rx={24} ry={12} fill="#E7E5E4" />
+          <IsoPrism cx={cx} cy={cy + 2} rx={14} ry={7} height={11} topColor={theme.waterColor} leftColor="#94A3B8" rightColor="#64748B" />
+          <line x1={cx - 10} y1={cy - 8} x2={cx - 10} y2={cy - 28} stroke="#78350F" strokeWidth="2.4" />
+          <line x1={cx + 10} y1={cy - 8} x2={cx + 10} y2={cy - 28} stroke="#78350F" strokeWidth="2.4" />
+          <IsoGableRoof cx={cx} cy={cy - 26} rx={18} ry={9} peakHeight={10} leftSlopeColor="#9A3412" rightSlopeColor="#7C2D12" gableColor="#78350F" />
         </g>
       );
 
@@ -844,28 +1081,9 @@ function renderStructureArt(
             { dx: 0, dy: 8, s: 1.1 },
           ].map((tree, idx) => (
             <g key={idx} className="animate-sway" style={{ animationDelay: `${idx * 0.8}s` }}>
-              <rect
-                x={cx + tree.dx - 2.5}
-                y={cy + tree.dy - 14 * tree.s}
-                width={5}
-                height={16 * tree.s}
-                fill="#6B4F3A"
-              />
-              <ellipse
-                cx={cx + tree.dx}
-                cy={cy + tree.dy - 24 * tree.s}
-                rx={14 * tree.s}
-                ry={16 * tree.s}
-                fill={idx % 2 === 0 ? theme.foliagePrimary : theme.foliageSecondary}
-              />
-              <ellipse
-                cx={cx + tree.dx - 3}
-                cy={cy + tree.dy - 28 * tree.s}
-                rx={9 * tree.s}
-                ry={10 * tree.s}
-                fill={theme.foliagePrimary}
-                opacity="0.85"
-              />
+              <rect x={cx + tree.dx - 2.5} y={cy + tree.dy - 14 * tree.s} width={5} height={16 * tree.s} fill="#6B4F3A" />
+              <ellipse cx={cx + tree.dx} cy={cy + tree.dy - 24 * tree.s} rx={14 * tree.s} ry={16 * tree.s} fill={idx % 2 === 0 ? theme.foliagePrimary : theme.foliageSecondary} />
+              <ellipse cx={cx + tree.dx - 3} cy={cy + tree.dy - 28 * tree.s} rx={9 * tree.s} ry={10 * tree.s} fill={theme.foliagePrimary} opacity="0.85" />
             </g>
           ))}
         </g>
@@ -878,7 +1096,7 @@ function renderStructureArt(
           <ellipse cx={cx} cy={cy + 3} rx={30} ry={15} fill={theme.waterColor} stroke="#94A3B8" strokeWidth="2.5" />
           <ellipse cx={cx - 8} cy={cy + 2} rx={5} ry={2.5} fill="#10B981" />
           <ellipse cx={cx + 10} cy={cy + 5} rx={4} ry={2} fill="#059669" />
-          {/* Tiny koi accents */}
+          <circle cx={cx - 8} cy={cy + 1} r={1.8} fill="#F472B6" />
           <ellipse cx={cx + 2} cy={cy} rx={3} ry={1.3} fill="#F97316" />
           <ellipse cx={cx - 10} cy={cy + 7} rx={2.5} ry={1.1} fill="#FB923C" />
         </g>
@@ -887,16 +1105,7 @@ function renderStructureArt(
     case 'flower_bed':
       return (
         <g>
-          <IsoPrism
-            cx={cx}
-            cy={cy + 4}
-            rx={32}
-            ry={16}
-            height={5}
-            topColor={theme.foliagePrimary}
-            leftColor="#78716C"
-            rightColor="#57534E"
-          />
+          <IsoPrism cx={cx} cy={cy + 4} rx={32} ry={16} height={5} topColor={theme.foliagePrimary} leftColor="#78716C" rightColor="#57534E" />
           {[
             [-14, -3, '#F43F5E'],
             [-4, 1, '#FBBF24'],
@@ -914,36 +1123,11 @@ function renderStructureArt(
     case 'gazebo':
       return (
         <g>
-          <IsoPrism
-            cx={cx}
-            cy={cy + 5}
-            rx={24}
-            ry={12}
-            height={5}
-            topColor={theme.pathColor}
-            leftColor="#CBD5E1"
-            rightColor="#94A3B8"
-          />
+          <IsoPrism cx={cx} cy={cy + 5} rx={24} ry={12} height={5} topColor="#E7E5E4" leftColor="#CBD5E1" rightColor="#94A3B8" />
           {[-16, -6, 6, 16].map((dx, i) => (
-            <line
-              key={i}
-              x1={cx + dx}
-              y1={cy + (Math.abs(dx) > 10 ? 0 : 6)}
-              x2={cx + dx}
-              y2={cy - 22}
-              stroke="#E2E8F0"
-              strokeWidth="2.4"
-            />
+            <line key={i} x1={cx + dx} y1={cy + (Math.abs(dx) > 10 ? 0 : 6)} x2={cx + dx} y2={cy - 22} stroke="#F8FAFC" strokeWidth="2.4" />
           ))}
-          <IsoPyramidRoof
-            cx={cx}
-            cy={cy - 22}
-            rx={26}
-            ry={13}
-            peakHeight={18}
-            leftColor={theme.roofPrimary}
-            rightColor={theme.roofSecondary}
-          />
+          <IsoPyramidRoof cx={cx} cy={cy - 22} rx={26} ry={13} peakHeight={18} leftColor="#0F766E" rightColor="#115E59" />
         </g>
       );
 
@@ -952,18 +1136,8 @@ function renderStructureArt(
       return (
         <g>
           <ellipse cx={cx} cy={cy + 6} rx={36} ry={16} fill={theme.waterColor} />
-          <path
-            d={`M ${cx - 28} ${cy + 8} Q ${cx} ${cy - 20} ${cx + 28} ${cy + 8} L ${cx + 22} ${cy + 14} Q ${cx} ${cy - 8} ${cx - 22} ${cy + 14} Z`}
-            fill="#B45309"
-            stroke="#78350F"
-            strokeWidth="1"
-          />
-          <path
-            d={`M ${cx - 28} ${cy + 1} Q ${cx} ${cy - 27} ${cx + 28} ${cy + 1}`}
-            fill="none"
-            stroke="#78350F"
-            strokeWidth="2.2"
-          />
+          <path d={`M ${cx - 28} ${cy + 8} Q ${cx} ${cy - 20} ${cx + 28} ${cy + 8} L ${cx + 22} ${cy + 14} Q ${cx} ${cy - 8} ${cx - 22} ${cy + 14} Z`} fill="#B45309" stroke="#78350F" strokeWidth="1" />
+          <path d={`M ${cx - 28} ${cy + 1} Q ${cx} ${cy - 27} ${cx + 28} ${cy + 1}`} fill="none" stroke="#78350F" strokeWidth="2.2" />
         </g>
       );
 
@@ -972,7 +1146,7 @@ function renderStructureArt(
         <g>
           <ellipse cx={cx} cy={cy + 6} rx={38} ry={19} fill="#CBD5E1" stroke="#94A3B8" />
           <ellipse cx={cx} cy={cy + 4} rx={28} ry={14} fill="#E2E8F0" stroke="#94A3B8" />
-          <ellipse cx={cx} cy={cy + 2} rx={17} ry={8.5} fill={theme.pathColor} stroke="#94A3B8" />
+          <ellipse cx={cx} cy={cy + 2} rx={17} ry={8.5} fill="#F8FAFC" stroke="#94A3B8" />
           <circle cx={cx} cy={cy + 2} r={4} fill={theme.accentColor} />
         </g>
       );
@@ -980,35 +1154,9 @@ function renderStructureArt(
     case 'lantern_pavilion':
       return (
         <g>
-          <IsoPrism
-            cx={cx}
-            cy={cy + 5}
-            rx={28}
-            ry={14}
-            height={7}
-            topColor="#94A3B8"
-            leftColor="#64748B"
-            rightColor="#475569"
-          />
-          <IsoPrism
-            cx={cx}
-            cy={cy - 2}
-            rx={22}
-            ry={11}
-            height={18}
-            topColor={theme.roofPrimary}
-            leftColor={theme.isNight ? '#FDE68A' : '#FEF3C7'}
-            rightColor={theme.isNight ? '#FBBF24' : '#FDE68A'}
-          />
-          <IsoPyramidRoof
-            cx={cx}
-            cy={cy - 20}
-            rx={29}
-            ry={14.5}
-            peakHeight={16}
-            leftColor={theme.roofPrimary}
-            rightColor={theme.roofSecondary}
-          />
+          <IsoPrism cx={cx} cy={cy + 5} rx={28} ry={14} height={7} topColor="#94A3B8" leftColor="#64748B" rightColor="#475569" />
+          <IsoPrism cx={cx} cy={cy - 2} rx={22} ry={11} height={18} topColor="#991B1B" leftColor={warmGlass} rightColor="#FDE68A" />
+          <IsoPyramidRoof cx={cx} cy={cy - 20} rx={29} ry={14.5} peakHeight={16} leftColor="#991B1B" rightColor="#7F1D1D" />
           <circle cx={cx} cy={cy - 38} r={3} fill="#FBBF24" />
         </g>
       );
@@ -1026,12 +1174,7 @@ function renderConstructionSite(
 
   return (
     <g aria-label={isRunning ? 'Active construction site with workers building' : 'Staked construction plot'}>
-      {/* Active site outline */}
-      <polygon
-        points={isoDiamondPoints(cx, cy + 2, 42, 21)}
-        fill={theme.pathColor}
-        opacity="0.72"
-      />
+      <polygon points={isoDiamondPoints(cx, cy + 2, 42, 21)} fill={theme.pathColor} opacity="0.72" />
       <polygon
         points={isoDiamondPoints(cx, cy + 2, 44, 22)}
         fill="none"
@@ -1041,19 +1184,8 @@ function renderConstructionSite(
         className={isRunning ? 'animate-blueprint-pulse' : ''}
       />
 
-      {/* Rising stone/brick foundation */}
-      <IsoPrism
-        cx={cx}
-        cy={cy + 2}
-        rx={24}
-        ry={12}
-        height={risingHeight}
-        topColor="#E2E8F0"
-        leftColor="#CBD5E1"
-        rightColor="#94A3B8"
-      />
+      <IsoPrism cx={cx} cy={cy + 2} rx={24} ry={12} height={risingHeight} topColor="#E2E8F0" leftColor="#CBD5E1" rightColor="#94A3B8" />
 
-      {/* Wooden scaffolding & hoist beam */}
       <g stroke="#92400E" strokeWidth="2.2" strokeLinecap="round">
         <line x1={cx - 18} y1={cy - 2} x2={cx - 18} y2={cy - 34} />
         <line x1={cx + 18} y1={cy - 2} x2={cx + 18} y2={cy - 30} />
@@ -1065,52 +1197,30 @@ function renderConstructionSite(
         <rect x={cx + 2} y={cy - 21} width={8} height={6} rx={1} fill="#B45309" />
       </g>
 
-      {/* Stacked timber planks beside foundation */}
       <g transform={`translate(${cx + 18}, ${cy + 6})`}>
         <rect x="0" y="0" width="12" height="3" rx="0.8" fill="#B45309" />
         <rect x="1" y="-3" width="12" height="3" rx="0.8" fill="#D97706" />
       </g>
 
-      {/* Worker 1 (actively hammering when timer is running) */}
-      <g
-        transform={`translate(${cx - 24}, ${cy + 6})`}
-        className={isRunning ? 'animate-worker-bob' : ''}
-      >
-        {/* Shadow */}
+      <g transform={`translate(${cx - 24}, ${cy + 6})`} className={isRunning ? 'animate-worker-bob' : ''}>
         <ellipse cx="0" cy="4" rx="6" ry="3" fill="rgba(15,23,42,0.22)" />
-        {/* Legs & safety vest body */}
         <rect x="-2.5" y="-6" width="5" height="9" rx="1.5" fill="#1E293B" />
         <rect x="-3.5" y="-12" width="7" height="7" rx="1.5" fill="#EA580C" />
-        {/* Head & hard hat */}
         <circle cx="0" cy="-16" r="3.2" fill="#FDE68A" />
         <path d="M -4 -17 A 4 3.5 0 0 1 4 -17 Z" fill="#F59E0B" />
-        {/* Hammer arm */}
         <g transform="translate(3, -10)" className={isRunning ? 'animate-hammer' : ''}>
           <line x1="0" y1="0" x2="6" y2="-4" stroke="#78350F" strokeWidth="1.8" strokeLinecap="round" />
           <rect x="5" y="-7" width="4" height="2.6" rx="0.6" fill="#475569" transform="rotate(-25 6 -5)" />
         </g>
-        {/* Work sparks while running */}
         {isRunning && (
           <g transform="translate(10, -13)">
             <circle cx="0" cy="0" r="1.6" fill="#FBBF24" className="animate-spark" />
-            <circle
-              cx="4"
-              cy="-2"
-              r="1.3"
-              fill="#FDE047"
-              className="animate-spark"
-              style={{ animationDelay: '0.45s' }}
-            />
+            <circle cx="4" cy="-2" r="1.3" fill="#FDE047" className="animate-spark" style={{ animationDelay: '0.45s' }} />
           </g>
         )}
       </g>
 
-      {/* Worker 2 (inspecting / tending supplies) */}
-      <g
-        transform={`translate(${cx + 14}, ${cy + 12})`}
-        className={isRunning ? 'animate-worker-bob' : ''}
-        style={{ animationDelay: '0.35s' }}
-      >
+      <g transform={`translate(${cx + 14}, ${cy + 12})`} className={isRunning ? 'animate-worker-bob' : ''} style={{ animationDelay: '0.35s' }}>
         <ellipse cx="0" cy="3" rx="5.5" ry="2.6" fill="rgba(15,23,42,0.2)" />
         <rect x="-2.2" y="-5" width="4.4" height="7" rx="1.2" fill="#334155" />
         <rect x="-3" y="-11" width="6" height="6.5" rx="1.4" fill="#0D9488" />
@@ -1133,14 +1243,12 @@ export const IsometricWorld: React.FC<IsometricWorldProps> = ({
   isRunning,
   newlyUnlockedId,
 }) => {
-  // Sort grid slots back-to-front (painter's algorithm: smaller col + row rendered first)
   const orderedSlots = useMemo(() => {
     return [...allBlueprints].sort((a, b) => a.col + a.row - (b.col + b.row));
   }, [allBlueprints]);
 
   const unlockedCount = unlockedIds.size;
 
-  // Compute the 4 outer corners of the 4x4 island platform
   const topCorner = { x: ORIGIN_X, y: ORIGIN_Y - TILE_H };
   const rightCorner = { x: ORIGIN_X + 4 * TILE_W, y: ORIGIN_Y + 3 * TILE_H };
   const bottomCorner = { x: ORIGIN_X, y: ORIGIN_Y + 7 * TILE_H };
@@ -1170,10 +1278,8 @@ export const IsometricWorld: React.FC<IsometricWorldProps> = ({
           </radialGradient>
         </defs>
 
-        {/* Sky Background */}
         <rect x="0" y="0" width="860" height="520" fill={`url(#sky-${theme.id})`} />
 
-        {/* Night Stars */}
         {theme.isNight && (
           <g>
             {[
@@ -1201,11 +1307,9 @@ export const IsometricWorld: React.FC<IsometricWorldProps> = ({
           </g>
         )}
 
-        {/* Sun / Moon */}
         <circle cx="715" cy="86" r="54" fill="url(#sunGlow)" />
         <circle cx="715" cy="86" r="24" fill={theme.sunOrMoonColor} />
 
-        {/* Soft Drifting Clouds */}
         <g opacity={theme.isNight ? 0.16 : 0.72} className="animate-cloud">
           <ellipse cx="185" cy="84" rx="44" ry="15" fill="#FFFFFF" />
           <ellipse cx="212" cy="78" rx="28" ry="13" fill="#FFFFFF" />
@@ -1215,19 +1319,16 @@ export const IsometricWorld: React.FC<IsometricWorldProps> = ({
           <ellipse cx="546" cy="102" rx="24" ry="10" fill="#FFFFFF" />
         </g>
 
-        {/* Water Rim / Moat */}
         <polygon
           points={`${topCorner.x},${topCorner.y - 18} ${rightCorner.x + 36},${rightCorner.y + 18} ${bottomCorner.x},${bottomCorner.y + cliffDepth + 14} ${leftCorner.x - 36},${leftCorner.y + 18}`}
           fill={theme.waterColor}
           opacity="0.55"
         />
 
-        {/* Island Cliff Base */}
         <polygon points={islandLeftCliff} fill={theme.islandLeft} />
         <polygon points={islandRightCliff} fill={theme.islandRight} />
         <polygon points={islandTopPolygon} fill={theme.islandTop} />
 
-        {/* Checkerboard Isometric Grid Tiles & Pathways */}
         {orderedSlots.map((slot) => {
           const { x, y } = toIso(slot.col, slot.row);
           const isBuilt = unlockedIds.has(slot.id);
@@ -1242,13 +1343,8 @@ export const IsometricWorld: React.FC<IsometricWorldProps> = ({
                 stroke={isSelected ? theme.accentColor : 'rgba(15,23,42,0.06)'}
                 strokeWidth={isSelected ? '2' : '0.75'}
               />
-              {/* Subtle cobblestone pad or empty plot stake */}
               {isBuilt ? (
-                <polygon
-                  points={isoDiamondPoints(x, y + 2, 42, 21)}
-                  fill={theme.pathColor}
-                  opacity="0.55"
-                />
+                <polygon points={isoDiamondPoints(x, y + 2, 42, 21)} fill={theme.pathColor} opacity="0.55" />
               ) : (
                 <polygon
                   points={isoDiamondPoints(x, y + 1, 24, 12)}
@@ -1262,7 +1358,6 @@ export const IsometricWorld: React.FC<IsometricWorldProps> = ({
           );
         })}
 
-        {/* Built Structures & Active Construction Plot (back-to-front painter order) */}
         {orderedSlots.map((bp) => {
           const { x, y } = toIso(bp.col, bp.row);
 
@@ -1296,15 +1391,7 @@ export const IsometricWorld: React.FC<IsometricWorldProps> = ({
               }}
             >
               {isSelected && (
-                <ellipse
-                  cx={x}
-                  cy={y + 4}
-                  rx={46}
-                  ry={23}
-                  fill="none"
-                  stroke={theme.accentColor}
-                  strokeWidth="2.5"
-                />
+                <ellipse cx={x} cy={y + 4} rx={46} ry={23} fill="none" stroke={theme.accentColor} strokeWidth="2.5" />
               )}
               {renderStructureArt(bp.kind, x, y, theme, isRunning)}
             </g>
