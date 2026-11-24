@@ -1,0 +1,6 @@
+{
+  "name": "Loci",
+  "description": "A focus-based study timer where every minute spent studying builds your subject's living city and unlocks new architectural environments.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

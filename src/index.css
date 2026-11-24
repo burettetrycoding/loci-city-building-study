@@ -1,0 +1,111 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+  }
+  h1, h2, h3, .font-display {
+    font-family: var(--font-display);
+  }
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@keyframes floatCloud {
+  0%, 100% {
+    transform: translateX(0px);
+  }
+  50% {
+    transform: translateX(18px);
+  }
+}
+
+@keyframes gentleSway {
+  0%, 100% {
+    transform: rotate(-1.5deg);
+  }
+  50% {
+    transform: rotate(1.5deg);
+  }
+}
+
+@keyframes smokeRise {
+  0% {
+    transform: translateY(0px) scale(0.85);
+    opacity: 0.65;
+  }
+  100% {
+    transform: translateY(-16px) scale(1.35);
+    opacity: 0;
+  }
+}
+
+@keyframes buildPop {
+  0% {
+    transform: translateY(10px) scale(0.88);
+    opacity: 0;
+  }
+  70% {
+    transform: translateY(-2px) scale(1.02);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0px) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes starTwinkle {
+  0%, 100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
+.animate-cloud {
+  animation: floatCloud 18s ease-in-out infinite;
+}
+
+.animate-cloud-slow {
+  animation: floatCloud 26s ease-in-out infinite reverse;
+}
+
+.animate-sway {
+  transform-box: fill-box;
+  transform-origin: bottom center;
+  animation: gentleSway 5s ease-in-out infinite;
+}
+
+.animate-smoke {
+  animation: smokeRise 3.2s ease-out infinite;
+}
+
+.animate-build-pop {
+  transform-box: fill-box;
+  transform-origin: bottom center;
+  animation: buildPop 520ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-twinkle {
+  animation: starTwinkle 4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-cloud,
+  .animate-cloud-slow,
+  .animate-sway,
+  .animate-smoke,
+  .animate-build-pop,
+  .animate-twinkle {
+    animation: none !important;
+  }
+}
