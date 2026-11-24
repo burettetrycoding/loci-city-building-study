@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
@@ -71,6 +72,53 @@
   }
 }
 
+@keyframes workerHammer {
+  0%, 100% {
+    transform: rotate(-28deg);
+  }
+  45% {
+    transform: rotate(24deg);
+  }
+}
+
+@keyframes workerBob {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes sparkPop {
+  0% {
+    transform: translateY(0px) scale(0.6);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(-12px) scale(1.15);
+    opacity: 0;
+  }
+}
+
+@keyframes craneSwing {
+  0%, 100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+@keyframes blueprintPulse {
+  0%, 100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
 .animate-cloud {
   animation: floatCloud 18s ease-in-out infinite;
 }
@@ -99,13 +147,42 @@
   animation: starTwinkle 4s ease-in-out infinite;
 }
 
+.animate-hammer {
+  transform-box: fill-box;
+  transform-origin: 2px 2px;
+  animation: workerHammer 0.85s ease-in-out infinite;
+}
+
+.animate-worker-bob {
+  animation: workerBob 0.85s ease-in-out infinite;
+}
+
+.animate-spark {
+  animation: sparkPop 1.2s ease-out infinite;
+}
+
+.animate-crane {
+  transform-box: fill-box;
+  transform-origin: bottom left;
+  animation: craneSwing 3.4s ease-in-out infinite;
+}
+
+.animate-blueprint-pulse {
+  animation: blueprintPulse 2.2s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-cloud,
   .animate-cloud-slow,
   .animate-sway,
   .animate-smoke,
   .animate-build-pop,
-  .animate-twinkle {
+  .animate-twinkle,
+  .animate-hammer,
+  .animate-worker-bob,
+  .animate-spark,
+  .animate-crane,
+  .animate-blueprint-pulse {
     animation: none !important;
   }
 }

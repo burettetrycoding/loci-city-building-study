@@ -1,7 +1,8 @@
 import React from 'react';
-import { Pause, Play, Square, Volume2, VolumeX } from 'lucide-react';
+import { Hammer, Moon, Pause, Play, Square, Sun, Volume2, VolumeX } from 'lucide-react';
 import { formatClock, formatReadableDuration } from '../data/worldData';
 import {
+  ColorMode,
   EnvironmentTheme,
   StructureBlueprint,
   SubjectCity,
@@ -20,6 +21,8 @@ interface TimerControlsProps {
   onStopAndSave: () => void;
   soundEnabled: boolean;
   onToggleSound: () => void;
+  colorMode: ColorMode;
+  onChangeColorMode: (mode: ColorMode) => void;
   subjectLevel: number;
   secondsInLevel: number;
   unlockedCount: number;
@@ -41,6 +44,8 @@ export const TimerControls: React.FC<TimerControlsProps> = ({
   onStopAndSave,
   soundEnabled,
   onToggleSound,
+  colorMode,
+  onChangeColorMode,
   subjectLevel,
   secondsInLevel,
   unlockedCount,
@@ -74,17 +79,17 @@ export const TimerControls: React.FC<TimerControlsProps> = ({
     subject.style === 'city' ? 'Civic City' : subject.style === 'village' ? 'Cozy Village' : 'Botanical Park';
 
   return (
-    <section className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <div className="space-y-5">
         {/* Subject header & quiet metadata */}
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
+            <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
               <span>{styleLabel}</span>
               <span aria-hidden="true">·</span>
               <span>Level {theme.level}: {theme.name}</span>
             </div>
-            <h2 className="mt-1 truncate font-display text-2xl font-semibold text-slate-900">
+            <h2 className="mt-1 truncate font-display text-2xl font-semibold text-slate-900 dark:text-slate-100">
               {subject.name}
             </h2>
           </div>
@@ -92,16 +97,16 @@ export const TimerControls: React.FC<TimerControlsProps> = ({
           <button
             type="button"
             onClick={onOpenSubjects}
-            className="shrink-0 whitespace-nowrap rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+            className="shrink-0 whitespace-nowrap rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
           >
             Switch Subject
           </button>
         </div>
 
-        {/* Timer Mode Segmented Selector */}
-        <div className="flex items-center justify-between gap-3">
+        {/* Timer Mode & Light/Dark + Sound Controls */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div
-            className="inline-flex rounded-lg bg-slate-100 p-1"
+            className="inline-flex rounded-lg bg-slate-100 p-1 dark:bg-slate-800"
             role="group"
             aria-label="Focus timer mode"
           >
@@ -116,10 +121,10 @@ export const TimerControls: React.FC<TimerControlsProps> = ({
                 key={opt.id}
                 type="button"
                 onClick={() => onChangeMode(opt.id)}
-                className={`whitespace-nowrap shrink-0 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                className={`whitespace-nowrap shrink-0 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
                   timerMode === opt.id
-                    ? 'bg-white text-slate-900 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-700 dark:text-slate-100'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'
                 }`}
               >
                 {opt.label}
@@ -127,22 +132,59 @@ export const TimerControls: React.FC<TimerControlsProps> = ({
             ))}
           </div>
 
-          <button
-            type="button"
-            onClick={onToggleSound}
-            aria-label={soundEnabled ? 'Mute sound chimes' : 'Enable sound chimes'}
-            title={soundEnabled ? 'Sound chimes on' : 'Sound chimes muted'}
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
-          >
-            {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-          </button>
+          <div className="flex items-center gap-1.5">
+            <div
+              className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 dark:border-slate-700 dark:bg-slate-800"
+              role="group"
+              aria-label="Appearance mode"
+            >
+              <button
+                type="button"
+                onClick={() => onChangeColorMode('light')}
+                aria-label="Light mode"
+                title="Light mode"
+                className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+                  colorMode === 'light'
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'
+                }`}
+              >
+                <Sun className="h-3.5 w-3.5" />
+                <span>Light</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onChangeColorMode('dark')}
+                aria-label="Dark mode"
+                title="Dark mode"
+                className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+                  colorMode === 'dark'
+                    ? 'bg-slate-900 text-slate-100 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'
+                }`}
+              >
+                <Moon className="h-3.5 w-3.5" />
+                <span>Dark</span>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={onToggleSound}
+              aria-label={soundEnabled ? 'Mute sound chimes' : 'Enable sound chimes'}
+              title={soundEnabled ? 'Sound chimes on' : 'Sound chimes muted'}
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+            >
+              {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+            </button>
+          </div>
         </div>
 
         {/* Main Focus Clock */}
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-5 py-6 text-center">
-          <p className="text-xs font-medium text-slate-500">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 px-5 py-6 text-center dark:border-slate-800 dark:bg-slate-950/60">
+          <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
             {isRunning
-              ? 'Focusing now · Progress saves automatically'
+              ? 'Focusing now · Workers building on site'
               : sessionSeconds > 0
                 ? 'Paused · Ready to resume or save'
                 : timerMode === 'free'
@@ -150,12 +192,12 @@ export const TimerControls: React.FC<TimerControlsProps> = ({
                   : `${timerMode === '25m' ? '25-minute' : '50-minute'} target session`}
           </p>
 
-          <div className="mt-2 font-mono text-5xl font-semibold tracking-tight text-slate-900 tabular-nums">
+          <div className="mt-2 font-mono text-5xl font-semibold tracking-tight text-slate-900 tabular-nums dark:text-slate-100">
             {formatClock(displaySeconds)}
           </div>
 
           {timerMode !== 'free' && sessionSeconds > 0 && (
-            <p className="mt-1.5 font-mono text-xs text-slate-500 tabular-nums">
+            <p className="mt-1.5 font-mono text-xs text-slate-500 tabular-nums dark:text-slate-400">
               Elapsed this session: {formatClock(sessionSeconds)}
             </p>
           )}
@@ -176,7 +218,7 @@ export const TimerControls: React.FC<TimerControlsProps> = ({
             <button
               type="button"
               onClick={onPause}
-              className="inline-flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+              className="inline-flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
             >
               <Pause className="h-4 w-4 fill-current" />
               <span>Pause</span>
@@ -187,7 +229,7 @@ export const TimerControls: React.FC<TimerControlsProps> = ({
             <button
               type="button"
               onClick={onStopAndSave}
-              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
             >
               <Square className="h-3.5 w-3.5 fill-current" />
               <span>Finish Session</span>
@@ -197,33 +239,44 @@ export const TimerControls: React.FC<TimerControlsProps> = ({
       </div>
 
       {/* Construction Progress & Subject Total */}
-      <div className="mt-6 border-t border-slate-200 pt-5">
+      <div className="mt-6 border-t border-slate-200 pt-5 dark:border-slate-800">
         <div className="flex items-baseline justify-between gap-2 text-xs">
-          <span className="font-medium text-slate-700">
-            {nextStructure ? `Next: ${nextStructure.name}` : 'All landmarks built'}
+          <span className="inline-flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-200">
+            {nextStructure && (
+              <Hammer
+                className={`h-3.5 w-3.5 text-amber-600 dark:text-amber-400 ${
+                  isRunning ? 'animate-hammer' : ''
+                }`}
+              />
+            )}
+            <span>
+              {nextStructure
+                ? `${isRunning ? 'Building' : 'Next'}: ${nextStructure.name}`
+                : 'All landmarks built'}
+            </span>
           </span>
-          <span className="font-mono text-slate-500 tabular-nums">
+          <span className="font-mono text-slate-500 tabular-nums dark:text-slate-400">
             {nextStructure ? `${formatReadableDuration(nextRemaining)} left` : '16 / 16 complete'}
           </span>
         </div>
 
-        <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+        <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
           <div
-            className="h-full rounded-full bg-teal-700 transition-all duration-300"
+            className="h-full rounded-full bg-teal-700 transition-all duration-300 dark:bg-teal-500"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-4 text-xs">
           <div>
-            <p className="text-slate-500">Subject Total</p>
-            <p className="mt-0.5 font-mono text-sm font-semibold text-slate-900 tabular-nums">
+            <p className="text-slate-500 dark:text-slate-400">Subject Total</p>
+            <p className="mt-0.5 font-mono text-sm font-semibold text-slate-900 tabular-nums dark:text-slate-100">
               {formatReadableDuration(liveSubjectTotal)}
             </p>
           </div>
           <div>
-            <p className="text-slate-500">Level {subjectLevel} Built</p>
-            <p className="mt-0.5 font-mono text-sm font-semibold text-slate-900 tabular-nums">
+            <p className="text-slate-500 dark:text-slate-400">Level {subjectLevel} Built</p>
+            <p className="mt-0.5 font-mono text-sm font-semibold text-slate-900 tabular-nums dark:text-slate-100">
               {unlockedCount} / {totalStructures}
             </p>
           </div>

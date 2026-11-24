@@ -11,6 +11,8 @@ interface IsometricWorldProps {
   style: SettlementStyle;
   allBlueprints: StructureBlueprint[];
   unlockedIds: Set<string>;
+  nextStructureId: string | null;
+  buildProgress: number;
   selectedStructureId: string | null;
   onSelectStructure: (structure: StructureBlueprint | null) => void;
   isRunning: boolean;
@@ -1013,11 +1015,119 @@ function renderStructureArt(
   }
 }
 
+function renderConstructionSite(
+  cx: number,
+  cy: number,
+  theme: EnvironmentTheme,
+  isRunning: boolean,
+  buildProgress: number
+) {
+  const risingHeight = 3 + Math.round(Math.min(1, Math.max(0, buildProgress)) * 12);
+
+  return (
+    <g aria-label={isRunning ? 'Active construction site with workers building' : 'Staked construction plot'}>
+      {/* Active site outline */}
+      <polygon
+        points={isoDiamondPoints(cx, cy + 2, 42, 21)}
+        fill={theme.pathColor}
+        opacity="0.72"
+      />
+      <polygon
+        points={isoDiamondPoints(cx, cy + 2, 44, 22)}
+        fill="none"
+        stroke="#F59E0B"
+        strokeWidth="1.75"
+        strokeDasharray="5 4"
+        className={isRunning ? 'animate-blueprint-pulse' : ''}
+      />
+
+      {/* Rising stone/brick foundation */}
+      <IsoPrism
+        cx={cx}
+        cy={cy + 2}
+        rx={24}
+        ry={12}
+        height={risingHeight}
+        topColor="#E2E8F0"
+        leftColor="#CBD5E1"
+        rightColor="#94A3B8"
+      />
+
+      {/* Wooden scaffolding & hoist beam */}
+      <g stroke="#92400E" strokeWidth="2.2" strokeLinecap="round">
+        <line x1={cx - 18} y1={cy - 2} x2={cx - 18} y2={cy - 34} />
+        <line x1={cx + 18} y1={cy - 2} x2={cx + 18} y2={cy - 30} />
+        <line x1={cx - 19} y1={cy - 24} x2={cx + 19} y2={cy - 22} strokeWidth="1.6" />
+      </g>
+      <g className={isRunning ? 'animate-crane' : ''}>
+        <line x1={cx - 18} y1={cy - 33} x2={cx + 10} y2={cy - 38} stroke="#78350F" strokeWidth="2.4" strokeLinecap="round" />
+        <line x1={cx + 6} y1={cy - 37} x2={cx + 6} y2={cy - 21} stroke="#64748B" strokeWidth="1" />
+        <rect x={cx + 2} y={cy - 21} width={8} height={6} rx={1} fill="#B45309" />
+      </g>
+
+      {/* Stacked timber planks beside foundation */}
+      <g transform={`translate(${cx + 18}, ${cy + 6})`}>
+        <rect x="0" y="0" width="12" height="3" rx="0.8" fill="#B45309" />
+        <rect x="1" y="-3" width="12" height="3" rx="0.8" fill="#D97706" />
+      </g>
+
+      {/* Worker 1 (actively hammering when timer is running) */}
+      <g
+        transform={`translate(${cx - 24}, ${cy + 6})`}
+        className={isRunning ? 'animate-worker-bob' : ''}
+      >
+        {/* Shadow */}
+        <ellipse cx="0" cy="4" rx="6" ry="3" fill="rgba(15,23,42,0.22)" />
+        {/* Legs & safety vest body */}
+        <rect x="-2.5" y="-6" width="5" height="9" rx="1.5" fill="#1E293B" />
+        <rect x="-3.5" y="-12" width="7" height="7" rx="1.5" fill="#EA580C" />
+        {/* Head & hard hat */}
+        <circle cx="0" cy="-16" r="3.2" fill="#FDE68A" />
+        <path d="M -4 -17 A 4 3.5 0 0 1 4 -17 Z" fill="#F59E0B" />
+        {/* Hammer arm */}
+        <g transform="translate(3, -10)" className={isRunning ? 'animate-hammer' : ''}>
+          <line x1="0" y1="0" x2="6" y2="-4" stroke="#78350F" strokeWidth="1.8" strokeLinecap="round" />
+          <rect x="5" y="-7" width="4" height="2.6" rx="0.6" fill="#475569" transform="rotate(-25 6 -5)" />
+        </g>
+        {/* Work sparks while running */}
+        {isRunning && (
+          <g transform="translate(10, -13)">
+            <circle cx="0" cy="0" r="1.6" fill="#FBBF24" className="animate-spark" />
+            <circle
+              cx="4"
+              cy="-2"
+              r="1.3"
+              fill="#FDE047"
+              className="animate-spark"
+              style={{ animationDelay: '0.45s' }}
+            />
+          </g>
+        )}
+      </g>
+
+      {/* Worker 2 (inspecting / tending supplies) */}
+      <g
+        transform={`translate(${cx + 14}, ${cy + 12})`}
+        className={isRunning ? 'animate-worker-bob' : ''}
+        style={{ animationDelay: '0.35s' }}
+      >
+        <ellipse cx="0" cy="3" rx="5.5" ry="2.6" fill="rgba(15,23,42,0.2)" />
+        <rect x="-2.2" y="-5" width="4.4" height="7" rx="1.2" fill="#334155" />
+        <rect x="-3" y="-11" width="6" height="6.5" rx="1.4" fill="#0D9488" />
+        <circle cx="0" cy="-14.5" r="3" fill="#FDE68A" />
+        <path d="M -3.8 -15.5 A 3.8 3.2 0 0 1 3.8 -15.5 Z" fill="#F59E0B" />
+      </g>
+    </g>
+  );
+}
+
 export const IsometricWorld: React.FC<IsometricWorldProps> = ({
   theme,
   style,
   allBlueprints,
   unlockedIds,
+  nextStructureId,
+  buildProgress,
   selectedStructureId,
   onSelectStructure,
   isRunning,
@@ -1042,7 +1152,7 @@ export const IsometricWorld: React.FC<IsometricWorldProps> = ({
   const islandRightCliff = `${bottomCorner.x},${bottomCorner.y} ${rightCorner.x},${rightCorner.y} ${rightCorner.x},${rightCorner.y + cliffDepth} ${bottomCorner.x},${bottomCorner.y + cliffDepth}`;
 
   return (
-    <div className="relative w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="relative w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <svg
         viewBox="0 0 860 520"
         className="block h-auto w-full select-none"
@@ -1152,10 +1262,21 @@ export const IsometricWorld: React.FC<IsometricWorldProps> = ({
           );
         })}
 
-        {/* Built Structures (back-to-front painter order) */}
+        {/* Built Structures & Active Construction Plot (back-to-front painter order) */}
         {orderedSlots.map((bp) => {
-          if (!unlockedIds.has(bp.id)) return null;
           const { x, y } = toIso(bp.col, bp.row);
+
+          if (!unlockedIds.has(bp.id)) {
+            if (bp.id === nextStructureId) {
+              return (
+                <g key={`site-${bp.id}`}>
+                  {renderConstructionSite(x, y, theme, isRunning, buildProgress)}
+                </g>
+              );
+            }
+            return null;
+          }
+
           const isSelected = selectedStructureId === bp.id;
           const isNew = newlyUnlockedId === bp.id;
 

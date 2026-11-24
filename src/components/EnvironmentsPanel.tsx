@@ -22,17 +22,17 @@ export const EnvironmentsPanel: React.FC<EnvironmentsPanelProps> = ({
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="font-display text-2xl font-semibold text-slate-900">
+          <h2 className="font-display text-2xl font-semibold text-slate-900 dark:text-slate-100">
             Environment Levels &amp; Themes
           </h2>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
             Every 12 hours of total study time across all subjects unlocks a new atmospheric level.
           </p>
         </div>
 
         <div className="text-right">
-          <p className="text-xs text-slate-500">Total Study Time</p>
-          <p className="font-mono text-lg font-semibold text-slate-900 tabular-nums">
+          <p className="text-xs text-slate-500 dark:text-slate-400">Total Study Time</p>
+          <p className="font-mono text-lg font-semibold text-slate-900 tabular-nums dark:text-slate-100">
             {formatReadableDuration(totalStudySeconds)}
           </p>
         </div>
@@ -47,10 +47,10 @@ export const EnvironmentsPanel: React.FC<EnvironmentsPanelProps> = ({
           return (
             <div
               key={theme.id}
-              className={`flex flex-col justify-between overflow-hidden rounded-2xl border bg-white transition-colors ${
+              className={`flex flex-col justify-between overflow-hidden rounded-2xl border bg-white transition-colors dark:bg-slate-900 ${
                 isSelected
-                  ? 'border-teal-700 ring-1 ring-teal-700'
-                  : 'border-slate-200'
+                  ? 'border-teal-700 ring-1 ring-teal-700 dark:border-teal-500 dark:ring-teal-500'
+                  : 'border-slate-200 dark:border-slate-800'
               }`}
             >
               {/* Theme Palette Preview Banner */}
@@ -108,24 +108,24 @@ export const EnvironmentsPanel: React.FC<EnvironmentsPanelProps> = ({
 
               <div className="flex flex-1 flex-col justify-between p-5">
                 <div>
-                  <div className="flex items-center justify-between gap-2 text-xs text-slate-500">
+                  <div className="flex items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
                     <span>
                       {theme.unlockSeconds === 0
                         ? 'Starter Level'
                         : `Unlocks at ${formatReadableDuration(theme.unlockSeconds)}`}
                     </span>
                     {!unlocked && (
-                      <span className="inline-flex items-center gap-1 font-mono text-amber-700 tabular-nums">
+                      <span className="inline-flex items-center gap-1 font-mono text-amber-700 tabular-nums dark:text-amber-400">
                         <Lock className="h-3 w-3" />
                         <span>{formatReadableDuration(remaining)} left</span>
                       </span>
                     )}
                   </div>
 
-                  <h3 className="mt-1.5 font-display text-lg font-semibold text-slate-900">
+                  <h3 className="mt-1.5 font-display text-lg font-semibold text-slate-900 dark:text-slate-100">
                     {theme.name}
                   </h3>
-                  <p className="mt-1 text-sm text-slate-600">{theme.subtitle}</p>
+                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{theme.subtitle}</p>
                 </div>
 
                 <div className="mt-5">
@@ -137,8 +137,8 @@ export const EnvironmentsPanel: React.FC<EnvironmentsPanelProps> = ({
                       isSelected
                         ? 'bg-teal-700 text-white'
                         : unlocked
-                          ? 'bg-slate-900 text-white hover:bg-slate-800'
-                          : 'cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400'
+                          ? 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white'
+                          : 'cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400 dark:border-slate-800 dark:bg-slate-800/70 dark:text-slate-500'
                     }`}
                   >
                     {isSelected ? (

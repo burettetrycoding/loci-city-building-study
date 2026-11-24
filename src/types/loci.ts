@@ -10,6 +10,8 @@ export type EnvironmentId =
 
 export type TimerMode = 'free' | '25m' | '50m';
 
+export type ColorMode = 'light' | 'dark';
+
 export interface SubjectCity {
   id: string;
   name: string;
@@ -35,6 +37,7 @@ export interface UserAccount {
   activeSubjectId: string;
   selectedEnvironmentId: EnvironmentId;
   soundEnabled: boolean;
+  colorMode?: ColorMode;
   subjects: SubjectCity[];
   sessions: StudySession[];
   createdAt: string;

@@ -74,10 +74,10 @@ export const SubjectsPanel: React.FC<SubjectsPanelProps> = ({
       {/* Subject Cities List */}
       <div className="space-y-6 lg:col-span-7">
         <div>
-          <h2 className="font-display text-2xl font-semibold text-slate-900">
+          <h2 className="font-display text-2xl font-semibold text-slate-900 dark:text-slate-100">
             Your Study Subjects
           </h2>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
             Each subject grows its own persistent settlement. Select a subject to load and build its world.
           </p>
         </div>
@@ -100,35 +100,35 @@ export const SubjectsPanel: React.FC<SubjectsPanelProps> = ({
                 key={sub.id}
                 className={`flex flex-col justify-between rounded-2xl border p-5 transition-colors ${
                   isActive
-                    ? 'border-teal-700 bg-teal-50/40'
-                    : 'border-slate-200 bg-white hover:border-slate-300'
+                    ? 'border-teal-700 bg-teal-50/40 dark:border-teal-500 dark:bg-teal-950/30'
+                    : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700'
                 }`}
               >
                 <div>
-                  <div className="flex items-center justify-between gap-2 text-xs text-slate-500">
+                  <div className="flex items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
                     <span>{styleTitle} · Level {subLevel}</span>
                     <span className="font-mono tabular-nums">
                       {builtCount}/{totalBlueprints} built
                     </span>
                   </div>
 
-                  <h3 className="mt-1.5 font-display text-lg font-semibold text-slate-900">
+                  <h3 className="mt-1.5 font-display text-lg font-semibold text-slate-900 dark:text-slate-100">
                     {sub.name}
                   </h3>
 
-                  <p className="mt-1 font-mono text-sm text-slate-600 tabular-nums">
+                  <p className="mt-1 font-mono text-sm text-slate-600 tabular-nums dark:text-slate-300">
                     {formatReadableDuration(sub.totalSeconds)} studied
                   </p>
                 </div>
 
-                <div className="mt-5 flex items-center justify-between gap-2 border-t border-slate-200/80 pt-4">
+                <div className="mt-5 flex items-center justify-between gap-2 border-t border-slate-200/80 pt-4 dark:border-slate-800">
                   <button
                     type="button"
                     onClick={() => onSelectSubject(sub.id)}
                     className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3.5 py-2 text-xs font-semibold transition-colors ${
                       isActive
                         ? 'bg-teal-700 text-white'
-                        : 'bg-slate-900 text-white hover:bg-slate-800'
+                        : 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white'
                     }`}
                   >
                     {isActive && <Check className="h-3.5 w-3.5" />}
@@ -146,7 +146,7 @@ export const SubjectsPanel: React.FC<SubjectsPanelProps> = ({
                           : `Delete ${sub.name}`
                       }
                       aria-label={`Delete ${sub.name}`}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-red-950/50 dark:hover:text-red-400"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -158,24 +158,24 @@ export const SubjectsPanel: React.FC<SubjectsPanelProps> = ({
         </div>
 
         {/* Recent Sessions Log */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-6">
-          <h3 className="font-display text-lg font-semibold text-slate-900">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+          <h3 className="font-display text-lg font-semibold text-slate-900 dark:text-slate-100">
             Recent Focus Sessions
           </h3>
           {sessions.length === 0 ? (
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
               No completed sessions logged yet. Start the timer on the City Stage to record your first study block.
             </p>
           ) : (
-            <div className="mt-4 divide-y divide-slate-100">
+            <div className="mt-4 divide-y divide-slate-100 dark:divide-slate-800">
               {sessions.slice(0, 6).map((sess) => (
                 <div
                   key={sess.id}
                   className="flex items-center justify-between gap-4 py-3 text-sm first:pt-0 last:pb-0"
                 >
                   <div>
-                    <p className="font-medium text-slate-900">{sess.subjectName}</p>
-                    <p className="text-xs text-slate-500">
+                    <p className="font-medium text-slate-900 dark:text-slate-100">{sess.subjectName}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
                       {new Date(sess.endedAt).toLocaleDateString(undefined, {
                         month: 'short',
                         day: 'numeric',
@@ -184,7 +184,7 @@ export const SubjectsPanel: React.FC<SubjectsPanelProps> = ({
                       })}
                     </p>
                   </div>
-                  <span className="font-mono text-sm font-medium text-teal-700 tabular-nums">
+                  <span className="font-mono text-sm font-medium text-teal-700 tabular-nums dark:text-teal-400">
                     +{formatReadableDuration(sess.durationSeconds)}
                   </span>
                 </div>
@@ -198,12 +198,12 @@ export const SubjectsPanel: React.FC<SubjectsPanelProps> = ({
       <div className="lg:col-span-5">
         <form
           onSubmit={handleSubmit}
-          className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs"
+          className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900"
         >
-          <h3 className="font-display text-xl font-semibold text-slate-900">
+          <h3 className="font-display text-xl font-semibold text-slate-900 dark:text-slate-100">
             Add New Subject City
           </h3>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
             Pick a subject and choose what kind of world your study hours will build.
           </p>
 
@@ -211,7 +211,7 @@ export const SubjectsPanel: React.FC<SubjectsPanelProps> = ({
             <div>
               <label
                 htmlFor="subject-name-input"
-                className="block text-xs font-semibold text-slate-700"
+                className="block text-xs font-semibold text-slate-700 dark:text-slate-300"
               >
                 Subject Name
               </label>
@@ -225,12 +225,12 @@ export const SubjectsPanel: React.FC<SubjectsPanelProps> = ({
                   if (error) setError('');
                 }}
                 placeholder="e.g. Organic Chemistry, Economics, Spanish"
-                className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-700 focus:outline-none"
+                className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-700 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-teal-500"
               />
             </div>
 
             <div>
-              <span className="block text-xs font-semibold text-slate-700">
+              <span className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
                 Settlement Archetype
               </span>
               <div className="mt-2 space-y-2.5">
@@ -241,24 +241,24 @@ export const SubjectsPanel: React.FC<SubjectsPanelProps> = ({
                     onClick={() => setStyle(opt.id)}
                     className={`w-full rounded-xl border p-3.5 text-left transition-colors ${
                       style === opt.id
-                        ? 'border-teal-700 bg-teal-50/50'
-                        : 'border-slate-200 bg-white hover:border-slate-300'
+                        ? 'border-teal-700 bg-teal-50/50 dark:border-teal-500 dark:bg-teal-950/30'
+                        : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950/50 dark:hover:border-slate-700'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold text-slate-900">{opt.label}</span>
+                      <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">{opt.label}</span>
                       {style === opt.id && (
-                        <span className="text-xs font-medium text-teal-700">Selected</span>
+                        <span className="text-xs font-medium text-teal-700 dark:text-teal-400">Selected</span>
                       )}
                     </div>
-                    <p className="mt-0.5 text-xs text-slate-600">{opt.description}</p>
+                    <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">{opt.description}</p>
                   </button>
                 ))}
               </div>
             </div>
 
             {error && (
-              <p className="text-xs font-medium text-red-600" role="alert">
+              <p className="text-xs font-medium text-red-600 dark:text-red-400" role="alert">
                 {error}
               </p>
             )}

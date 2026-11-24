@@ -19,6 +19,7 @@ import {
   isEnvironmentUnlocked,
 } from './data/worldData';
 import {
+  ColorMode,
   EnvironmentId,
   EnvironmentTheme,
   SettlementStyle,
@@ -134,6 +135,24 @@ export default function App() {
     if (activeLevelUnlocked.length === 0) return 0;
     return activeLevelUnlocked[activeLevelUnlocked.length - 1].unlockSeconds;
   }, [activeLevelUnlocked]);
+
+  const buildProgress = useMemo(() => {
+    if (!nextStructure) return 1;
+    return Math.min(
+      1,
+      Math.max(
+        0,
+        (secondsInLevel - prevUnlockSeconds) /
+          Math.max(1, nextStructure.unlockSeconds - prevUnlockSeconds)
+      )
+    );
+  }, [nextStructure, secondsInLevel, prevUnlockSeconds]);
+
+  const colorMode: ColorMode = account.colorMode === 'dark' ? 'dark' : 'light';
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', colorMode === 'dark');
+  }, [colorMode]);
 
   // Persist account whenever it changes
   useEffect(() => {
@@ -350,6 +369,13 @@ export default function App() {
     }));
   };
 
+  const handleChangeColorMode = (mode: ColorMode) => {
+    setAccount((curr) => ({
+      ...curr,
+      colorMode: mode,
+    }));
+  };
+
   const handleSwitchAccount = (target: UserAccount) => {
     if (isRunning) setIsRunning(false);
     if (sessionSeconds > 0) {
@@ -387,15 +413,15 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       {/* Three-Zone Top Bar */}
-      <header className="border-b border-slate-200 bg-white">
+      <header className="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-8 px-6 py-4">
           {/* Zone 1: Single text element wordmark */}
           <button
             type="button"
             onClick={() => setActiveTab('stage')}
-            className="shrink-0 whitespace-nowrap font-display text-xl font-bold tracking-tight text-slate-900"
+            className="shrink-0 whitespace-nowrap font-display text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100"
           >
             Loci
           </button>
@@ -418,8 +444,8 @@ export default function App() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`shrink-0 whitespace-nowrap border-b-2 py-1 transition-colors ${
                     active
-                      ? 'border-teal-700 text-slate-900'
-                      : 'border-transparent text-slate-600 hover:text-slate-900'
+                      ? 'border-teal-700 text-slate-900 dark:border-teal-400 dark:text-slate-100'
+                      : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'
                   }`}
                 >
                   {tab.label}
@@ -433,7 +459,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => setIsAccountModalOpen(true)}
-              className="whitespace-nowrap shrink-0 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+              className="whitespace-nowrap shrink-0 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
             >
               {account.username}
             </button>
@@ -447,10 +473,10 @@ export default function App() {
           <div className="space-y-8">
             {/* Milestone Unlock Notification (appears only on live unlock) */}
             {milestoneNotice && (
-              <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-teal-200 bg-teal-50/70 px-5 py-3.5">
+              <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-teal-200 bg-teal-50/70 px-5 py-3.5 dark:border-teal-800 dark:bg-teal-950/50">
                 <div>
-                  <p className="text-sm font-semibold text-teal-950">{milestoneNotice.title}</p>
-                  <p className="text-xs text-teal-800">{milestoneNotice.detail}</p>
+                  <p className="text-sm font-semibold text-teal-950 dark:text-teal-100">{milestoneNotice.title}</p>
+                  <p className="text-xs text-teal-800 dark:text-teal-300">{milestoneNotice.detail}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   {milestoneNotice.themeId && (
@@ -468,7 +494,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setMilestoneNotice(null)}
-                    className="whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium text-teal-800 hover:bg-teal-100"
+                    className="whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium text-teal-800 hover:bg-teal-100 dark:text-teal-200 dark:hover:bg-teal-900"
                   >
                     Dismiss
                   </button>
@@ -484,6 +510,8 @@ export default function App() {
                   style={activeSubject.style}
                   allBlueprints={allBlueprints}
                   unlockedIds={unlockedIds}
+                  nextStructureId={viewingLevel === subjectLevel ? (nextStructure?.id ?? null) : null}
+                  buildProgress={buildProgress}
                   selectedStructureId={selectedStructure?.id ?? null}
                   onSelectStructure={setSelectedStructure}
                   isRunning={isRunning}
@@ -491,37 +519,37 @@ export default function App() {
                 />
 
                 {/* Quiet Stage Bar: Inspector or Settlement Style Switcher */}
-                <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4">
+                <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 dark:border-slate-800 dark:bg-slate-900">
                   {selectedStructure ? (
                     <div className="flex flex-1 flex-wrap items-center justify-between gap-4">
                       <div>
-                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                           <span>{selectedStructure.category}</span>
                           <span aria-hidden="true">·</span>
                           <span className="font-mono tabular-nums">
                             Unlocked at {formatReadableDuration(selectedStructure.unlockSeconds)}
                           </span>
                         </div>
-                        <p className="mt-0.5 font-display text-base font-semibold text-slate-900">
+                        <p className="mt-0.5 font-display text-base font-semibold text-slate-900 dark:text-slate-100">
                           {selectedStructure.name}
                         </p>
-                        <p className="text-xs text-slate-600">{selectedStructure.description}</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400">{selectedStructure.description}</p>
                       </div>
                       <button
                         type="button"
                         onClick={() => setSelectedStructure(null)}
-                        className="shrink-0 whitespace-nowrap rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                        className="shrink-0 whitespace-nowrap rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                       >
                         Clear Selection
                       </button>
                     </div>
                   ) : (
                     <>
-                      <div className="text-xs text-slate-600">
-                        <span className="font-semibold text-slate-900">
+                      <div className="text-xs text-slate-600 dark:text-slate-400">
+                        <span className="font-semibold text-slate-900 dark:text-slate-100">
                           Total Focus: {formatReadableDuration(totalStudySeconds)}
                         </span>
-                        <span className="mx-2 text-slate-300" aria-hidden="true">
+                        <span className="mx-2 text-slate-300 dark:text-slate-700" aria-hidden="true">
                           ·
                         </span>
                         <span>Level {viewingLevel} ({unlockedStructures.length}/16 built)</span>
@@ -530,7 +558,7 @@ export default function App() {
                       <div className="flex flex-wrap items-center gap-3">
                         {subjectLevel > 1 && (
                           <div
-                            className="inline-flex rounded-lg bg-slate-100 p-1"
+                            className="inline-flex rounded-lg bg-slate-100 p-1 dark:bg-slate-800"
                             role="group"
                             aria-label="Inspect level"
                           >
@@ -544,8 +572,8 @@ export default function App() {
                                 }}
                                 className={`whitespace-nowrap shrink-0 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
                                   viewingLevel === lvl
-                                    ? 'bg-white text-slate-900 shadow-xs'
-                                    : 'text-slate-600 hover:text-slate-900'
+                                    ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-700 dark:text-slate-100'
+                                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'
                                 }`}
                               >
                                 Lvl {lvl}
@@ -555,7 +583,7 @@ export default function App() {
                         )}
 
                         <div
-                          className="inline-flex rounded-lg bg-slate-100 p-1"
+                          className="inline-flex rounded-lg bg-slate-100 p-1 dark:bg-slate-800"
                           role="group"
                           aria-label="Settlement archetype"
                         >
@@ -572,8 +600,8 @@ export default function App() {
                               onClick={() => handleChangeActiveStyle(opt.id)}
                               className={`whitespace-nowrap shrink-0 rounded-md px-3 py-1 text-xs font-medium transition-colors ${
                                 activeSubject.style === opt.id
-                                  ? 'bg-white text-slate-900 shadow-xs'
-                                  : 'text-slate-600 hover:text-slate-900'
+                                  ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-700 dark:text-slate-100'
+                                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'
                               }`}
                             >
                               {opt.label}
@@ -601,6 +629,8 @@ export default function App() {
                       onStopAndSave={handleStopAndSave}
                       soundEnabled={account.soundEnabled}
                       onToggleSound={handleToggleSound}
+                      colorMode={colorMode}
+                      onChangeColorMode={handleChangeColorMode}
                       subjectLevel={subjectLevel}
                       secondsInLevel={secondsInLevel}
                       unlockedCount={activeLevelUnlocked.length}
@@ -615,17 +645,17 @@ export default function App() {
             </div>
 
             {/* Landmarks Roadmap Strip */}
-            <section className="rounded-2xl border border-slate-200 bg-white p-6">
+            <section className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <div>
-                  <h3 className="font-display text-lg font-semibold text-slate-900">
+                  <h3 className="font-display text-lg font-semibold text-slate-900 dark:text-slate-100">
                     {activeSubject.name} · Level {viewingLevel} Blueprints
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     Each 12-hour level constructs 16 landmarks (1 new structure every 45 minutes of focus).
                   </p>
                 </div>
-                <span className="font-mono text-xs text-slate-500 tabular-nums">
+                <span className="font-mono text-xs text-slate-500 tabular-nums dark:text-slate-400">
                   {unlockedStructures.length} of {allBlueprints.length} built
                 </span>
               </div>
@@ -633,6 +663,7 @@ export default function App() {
               <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
                 {allBlueprints.map((bp) => {
                   const built = unlockedIds.has(bp.id);
+                  const isNext = viewingLevel === subjectLevel && nextStructure?.id === bp.id;
                   const isSelected = selectedStructure?.id === bp.id;
                   const cumulativeSeconds =
                     (viewingLevel - 1) * LEVEL_DURATION_SECONDS + bp.unlockSeconds;
@@ -644,24 +675,30 @@ export default function App() {
                       onClick={() => setSelectedStructure(isSelected ? null : bp)}
                       className={`flex flex-col items-start rounded-xl border p-3 text-left transition-colors ${
                         isSelected
-                          ? 'border-teal-700 bg-teal-50/60'
-                          : built
-                            ? 'border-slate-200 bg-white hover:border-slate-300'
-                            : 'cursor-default border-slate-100 bg-slate-50 opacity-70'
+                          ? 'border-teal-700 bg-teal-50/60 dark:border-teal-500 dark:bg-teal-950/40'
+                          : isNext
+                            ? 'border-amber-400 bg-amber-50/40 dark:border-amber-600/70 dark:bg-amber-950/20'
+                            : built
+                              ? 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950/40 dark:hover:border-slate-700'
+                              : 'cursor-default border-slate-100 bg-slate-50 opacity-70 dark:border-slate-800/60 dark:bg-slate-950/20'
                       }`}
                     >
-                      <span className="font-mono text-[11px] text-slate-500 tabular-nums">
+                      <span className="font-mono text-[11px] text-slate-500 tabular-nums dark:text-slate-400">
                         {String(bp.index).padStart(2, '0')} · {formatReadableDuration(cumulativeSeconds)}
                       </span>
-                      <span className="mt-1 line-clamp-2 text-xs font-semibold text-slate-900">
+                      <span className="mt-1 line-clamp-2 text-xs font-semibold text-slate-900 dark:text-slate-100">
                         {bp.name}
                       </span>
                       <span
                         className={`mt-auto pt-2 text-[11px] font-medium ${
-                          built ? 'text-teal-700' : 'text-slate-400'
+                          built
+                            ? 'text-teal-700 dark:text-teal-400'
+                            : isNext
+                              ? 'text-amber-700 dark:text-amber-400'
+                              : 'text-slate-400 dark:text-slate-500'
                         }`}
                       >
-                        {built ? 'Built' : 'Locked'}
+                        {built ? 'Built' : isNext ? (isRunning ? 'Building...' : 'Up Next') : 'Locked'}
                       </span>
                     </button>
                   );
@@ -699,6 +736,8 @@ export default function App() {
         onClose={() => setIsAccountModalOpen(false)}
         currentAccount={account}
         allAccounts={allAccounts}
+        colorMode={colorMode}
+        onChangeColorMode={handleChangeColorMode}
         onSwitchAccount={handleSwitchAccount}
         onCreateAccount={handleCreateAccount}
         onImportAccount={handleImportAccount}
